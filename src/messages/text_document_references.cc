@@ -5,39 +5,39 @@
 #include "queue_manager.h"
 
 namespace {
-MethodType kMethodType = "textDocument/references";
+MethodType k_method_type = "textDocument/references";
 
-struct In_TextDocumentReferences : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
-    struct lsReferenceContext {
+struct InTextDocumentReferences : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
+    struct LsReferenceContext {
         // Include the declaration of the current symbol.
-        bool includeDeclaration;
+        bool include_declaration;
         // Include references with these |Role| bits set.
         role role = role::All;
     };
     struct Params {
-        LsTextDocumentIdentifier textDocument;
+        LsTextDocumentIdentifier text_document;
         LsPosition position;
-        lsReferenceContext context;
+        LsReferenceContext context;
     };
 
     Params params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentReferences::lsReferenceContext,
-                    includeDeclaration, role);
-MAKE_REFLECT_STRUCT(In_TextDocumentReferences::Params, textDocument, position,
+MAKE_REFLECT_STRUCT(InTextDocumentReferences::LsReferenceContext,
+                    include_declaration, role);
+MAKE_REFLECT_STRUCT(InTextDocumentReferences::Params, text_document, position,
                     context);
-MAKE_REFLECT_STRUCT(In_TextDocumentReferences, id, params);
-REGISTER_IN_MESSAGE(In_TextDocumentReferences);
+MAKE_REFLECT_STRUCT(InTextDocumentReferences, id, params);
+REGISTER_IN_MESSAGE(InTextDocumentReferences);
 
-struct Handler_TextDocumentReferences
-    : BaseMessageHandler<In_TextDocumentReferences> {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct HandlerTextDocumentReferences
+    : BaseMessageHandler<InTextDocumentReferences> {
+    MethodType GetMethodType() const override { return k_method_type; }
 
-    void Run(In_TextDocumentReferences* request) override {
+    void Run(InTextDocumentReferences* request) override {
         QueryFile* file;
         if (!FindFileOrFail(db, project, request->id,
-                            request->params.textDocument.uri.GetAbsolutePath(),
+                            request->params.text_document.uri.GetAbsolutePath(),
                             &file)) {
             return;
         }
@@ -52,7 +52,7 @@ struct Handler_TextDocumentReferences
                  working_file, file, request->params.position)) {
             // Found symbol. Return references.
             EachOccurrenceWithParent(
-                db, sym, request->params.context.includeDeclaration,
+                db, sym, request->params.context.include_declaration,
                 [&](QueryId::LexicalRef ref, ls_symbol_kind parent_kind) {
                     if (ref.role & request->params.context.role)
                         if (optional<LsLocation> ls_loc =
@@ -88,8 +88,8 @@ struct Handler_TextDocumentReferences
 
         if ((int)out.result.size() >= g_config->xref.maxNum)
             out.result.resize(g_config->xref.maxNum);
-        QueueManager::WriteStdout(kMethodType, out);
+        QueueManager::WriteStdout(k_method_type, out);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentReferences);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentReferences);
 }  // namespace

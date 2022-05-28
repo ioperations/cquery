@@ -6,9 +6,9 @@
 #include "optional.h"
 
 struct CCppProperties {
-  std::string cStandard;
-  std::string cppStandard;
-  std::vector<std::string> args;
+    std::string c_standard;
+    std::string cpp_standard;
+    std::vector<std::string> args;
 };
 
 optional<CCppProperties> LoadCCppProperties(const std::string& json_full_path,

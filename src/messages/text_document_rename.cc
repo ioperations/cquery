@@ -3,7 +3,7 @@
 #include "queue_manager.h"
 
 namespace {
-MethodType kMethodType = "textDocument/rename";
+MethodType k_method_type = "textDocument/rename";
 
 LsWorkspaceEdit BuildWorkspaceEdit(QueryDatabase* db,
                                    WorkingFiles* working_files,
@@ -50,7 +50,7 @@ LsWorkspaceEdit BuildWorkspaceEdit(QueryDatabase* db,
 }
 
 struct In_TextDocumentRename : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+    MethodType GetMethodType() const override { return k_method_type; }
     struct Params {
         // The document to format.
         LsTextDocumentIdentifier textDocument;
@@ -77,7 +77,7 @@ struct Out_TextDocumentRename : public LsOutMessage<Out_TextDocumentRename> {
 MAKE_REFLECT_STRUCT(Out_TextDocumentRename, jsonrpc, id, result);
 
 struct Handler_TextDocumentRename : BaseMessageHandler<In_TextDocumentRename> {
-    MethodType GetMethodType() const override { return kMethodType; }
+    MethodType GetMethodType() const override { return k_method_type; }
     void Run(In_TextDocumentRename* request) override {
         QueryId::File file_id;
         QueryFile* file;
@@ -101,7 +101,7 @@ struct Handler_TextDocumentRename : BaseMessageHandler<In_TextDocumentRename> {
             break;
         }
 
-        QueueManager::WriteStdout(kMethodType, out);
+        QueueManager::WriteStdout(k_method_type, out);
     }
 };
 REGISTER_MESSAGE_HANDLER(Handler_TextDocumentRename);

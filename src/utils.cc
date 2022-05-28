@@ -471,7 +471,7 @@ size_t HashArguments(const std::vector<std::string>& args) {
     size_t hash = 0;
     for (auto it = args.begin(); it != args.end(); it++) {
         if (!is_file(*it)) {
-            hash_combine(hash, *it);
+            HashCombine(hash, *it);
         }
     }
     return hash;

@@ -25,72 +25,72 @@ namespace {
 MethodType k_method_type = "initialize";
 
 // Code Lens options.
-struct lsCodeLensOptions {
+struct LsCodeLensOptions {
     // Code lens has a resolve provider as well.
-    bool resolveProvider = false;
+    bool resolve_provider = false;
 };
-MAKE_REFLECT_STRUCT(lsCodeLensOptions, resolveProvider);
+MAKE_REFLECT_STRUCT(LsCodeLensOptions, resolve_provider);
 
 // Completion options.
-struct lsCompletionOptions {
+struct LsCompletionOptions {
     // The server provides support to resolve additional
     // information for a completion item.
-    bool resolveProvider = false;
+    bool resolve_provider = false;
 
     // The characters that trigger completion automatically.
     // vscode doesn't support trigger character sequences, so we use ':'
     // for
     // '::' and '>' for '->'. See
     // https://github.com/Microsoft/language-server-protocol/issues/138.
-    std::vector<std::string> triggerCharacters = {".", ":",  ">", "#",
-                                                  "<", "\"", "/"};
+    std::vector<std::string> trigger_characters = {".", ":",  ">", "#",
+                                                   "<", "\"", "/"};
 };
-MAKE_REFLECT_STRUCT(lsCompletionOptions, resolveProvider, triggerCharacters);
+MAKE_REFLECT_STRUCT(LsCompletionOptions, resolve_provider, trigger_characters);
 
 // Format document on type options
-struct lsDocumentOnTypeFormattingOptions {
+struct LsDocumentOnTypeFormattingOptions {
     // A character on which formatting should be triggered, like `}`.
-    std::string firstTriggerCharacter;
+    std::string first_trigger_character;
 
     // More trigger characters.
-    std::vector<std::string> moreTriggerCharacter;
+    std::vector<std::string> more_trigger_character;
 };
-MAKE_REFLECT_STRUCT(lsDocumentOnTypeFormattingOptions, firstTriggerCharacter,
-                    moreTriggerCharacter);
+MAKE_REFLECT_STRUCT(LsDocumentOnTypeFormattingOptions, first_trigger_character,
+                    more_trigger_character);
 
 // Document link options
-struct lsDocumentLinkOptions {
+struct LsDocumentLinkOptions {
     // Document links have a resolve provider as well.
-    bool resolveProvider = true;
+    bool resolve_provider = true;
 };
-MAKE_REFLECT_STRUCT(lsDocumentLinkOptions, resolveProvider);
+MAKE_REFLECT_STRUCT(LsDocumentLinkOptions, resolve_provider);
 
 // Execute command options.
-struct lsExecuteCommandOptions {
+struct LsExecuteCommandOptions {
     // The commands to be executed on the server
     std::vector<std::string> commands;
 };
-MAKE_REFLECT_STRUCT(lsExecuteCommandOptions, commands);
+MAKE_REFLECT_STRUCT(LsExecuteCommandOptions, commands);
 
 // Save options.
-struct lsSaveOptions {
+struct LsSaveOptions {
     // The client is supposed to include the content on save.
-    bool includeText = false;
+    bool include_text = false;
 };
-MAKE_REFLECT_STRUCT(lsSaveOptions, includeText);
+MAKE_REFLECT_STRUCT(LsSaveOptions, include_text);
 
 // Signature help options.
-struct lsSignatureHelpOptions {
+struct LsSignatureHelpOptions {
     // The characters that trigger signature help automatically.
     // NOTE: If updating signature help tokens make sure to also update
     // WorkingFile::FindClosestCallNameInBuffer.
-    std::vector<std::string> triggerCharacters = {"(", ","};
+    std::vector<std::string> trigger_characters = {"(", ","};
 };
-MAKE_REFLECT_STRUCT(lsSignatureHelpOptions, triggerCharacters);
+MAKE_REFLECT_STRUCT(LsSignatureHelpOptions, trigger_characters);
 
 // Defines how the host (editor) should sync document changes to the language
 // server.
-enum class lsTextDocumentSyncKind {
+enum class LsTextDocumentSyncKind {
     // Documents should not be synced at all.
     None = 0,
 
@@ -105,24 +105,24 @@ enum class lsTextDocumentSyncKind {
 };
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-function"
-MAKE_REFLECT_TYPE_PROXY(lsTextDocumentSyncKind)
+MAKE_REFLECT_TYPE_PROXY(LsTextDocumentSyncKind)
 #pragma clang diagnostic pop
 
-struct lsTextDocumentSyncOptions {
+struct LsTextDocumentSyncOptions {
     // Open and close notifications are sent to the server.
     bool openClose = false;
     // Change notificatins are sent to the server. See
     // TextDocumentSyncKind.None, TextDocumentSyncKind.Full and
     // TextDocumentSyncKindIncremental.
-    lsTextDocumentSyncKind change = lsTextDocumentSyncKind::Incremental;
+    LsTextDocumentSyncKind change = LsTextDocumentSyncKind::Incremental;
     // Will save notifications are sent to the server.
     optional<bool> willSave;
     // Will save wait until requests are sent to the server.
     optional<bool> willSaveWaitUntil;
     // Save notifications are sent to the server.
-    optional<lsSaveOptions> save;
+    optional<LsSaveOptions> save;
 };
-MAKE_REFLECT_STRUCT(lsTextDocumentSyncOptions, openClose, change, willSave,
+MAKE_REFLECT_STRUCT(LsTextDocumentSyncOptions, openClose, change, willSave,
                     willSaveWaitUntil, save);
 
 struct lsServerCapabilities {
@@ -131,15 +131,15 @@ struct lsServerCapabilities {
     // TextDocumentSyncKind number.
     // TODO: It seems like the new API is broken and doesn't work.
     // optional<lsTextDocumentSyncOptions> textDocumentSync;
-    lsTextDocumentSyncKind textDocumentSync =
-        lsTextDocumentSyncKind::Incremental;
+    LsTextDocumentSyncKind textDocumentSync =
+        LsTextDocumentSyncKind::Incremental;
 
     // The server provides hover support.
     bool hoverProvider = true;
     // The server provides completion support.
-    lsCompletionOptions completionProvider;
+    LsCompletionOptions completionProvider;
     // The server provides signature help support.
-    lsSignatureHelpOptions signatureHelpProvider;
+    LsSignatureHelpOptions signatureHelpProvider;
     // The server provides goto definition support.
     bool definitionProvider = true;
     // The server provides Goto Type Definition support.
@@ -157,20 +157,20 @@ struct lsServerCapabilities {
     // The server provides code actions.
     bool codeActionProvider = true;
     // The server provides code lens.
-    lsCodeLensOptions codeLensProvider;
+    LsCodeLensOptions codeLensProvider;
     // The server provides document formatting.
     bool documentFormattingProvider = true;
     // The server provides document range formatting.
     bool documentRangeFormattingProvider = true;
     // The server provides document formatting on typing.
-    optional<lsDocumentOnTypeFormattingOptions>
+    optional<LsDocumentOnTypeFormattingOptions>
         documentOnTypeFormattingProvider;
     // The server provides rename support.
     bool renameProvider = true;
     // The server provides document link support.
-    lsDocumentLinkOptions documentLinkProvider;
+    LsDocumentLinkOptions documentLinkProvider;
     // The server provides execute command support.
-    lsExecuteCommandOptions executeCommandProvider;
+    LsExecuteCommandOptions executeCommandProvider;
 };
 MAKE_REFLECT_STRUCT(lsServerCapabilities, textDocumentSync, hoverProvider,
                     completionProvider, signatureHelpProvider,
@@ -600,11 +600,11 @@ struct Handler_Initialize : BaseMessageHandler<In_InitializeRequest> {
                         << " indexers";
             for (int i = 0; i < g_config->index.threads; ++i) {
                 WorkThread::StartThread("indexer" + std::to_string(i), [=]() {
-                    Indexer_Main(diag_engine, file_consumer_shared,
-                                 timestamp_manager, import_manager,
-                                 import_pipeline_status, project, working_files,
-                                 global_code_complete_cache,
-                                 non_global_code_complete_cache);
+                    IndexerMain(diag_engine, file_consumer_shared,
+                                timestamp_manager, import_manager,
+                                import_pipeline_status, project, working_files,
+                                global_code_complete_cache,
+                                non_global_code_complete_cache);
                 });
             }
 

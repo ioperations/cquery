@@ -4,35 +4,35 @@
 #include "working_files.h"
 
 namespace {
-MethodType kMethodType = "textDocument/didClose";
+MethodType k_method_type = "textDocument/didClose";
 
-struct In_TextDocumentDidClose : public NotificationInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InTextDocumentDidClose : public NotificationInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
     struct Params {
-        LsTextDocumentIdentifier textDocument;
+        LsTextDocumentIdentifier text_document;
     };
     Params params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentDidClose::Params, textDocument);
-MAKE_REFLECT_STRUCT(In_TextDocumentDidClose, params);
-REGISTER_IN_MESSAGE(In_TextDocumentDidClose);
+MAKE_REFLECT_STRUCT(InTextDocumentDidClose::Params, text_document);
+MAKE_REFLECT_STRUCT(InTextDocumentDidClose, params);
+REGISTER_IN_MESSAGE(InTextDocumentDidClose);
 
-struct Handler_TextDocumentDidClose
-    : BaseMessageHandler<In_TextDocumentDidClose> {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct HandlerTextDocumentDidClose
+    : BaseMessageHandler<InTextDocumentDidClose> {
+    MethodType GetMethodType() const override { return k_method_type; }
 
-    void Run(In_TextDocumentDidClose* request) override {
-        AbsolutePath path = request->params.textDocument.uri.GetAbsolutePath();
+    void Run(InTextDocumentDidClose* request) override {
+        AbsolutePath path = request->params.text_document.uri.GetAbsolutePath();
 
         // Clear any diagnostics for the file.
         Out_TextDocumentPublishDiagnostics out;
-        out.params.uri = request->params.textDocument.uri;
-        QueueManager::WriteStdout(kMethodType, out);
+        out.params.uri = request->params.text_document.uri;
+        QueueManager::WriteStdout(k_method_type, out);
 
         // Remove internal state.
-        working_files->OnClose(request->params.textDocument);
+        working_files->OnClose(request->params.text_document);
         clang_complete->NotifyClose(path);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentDidClose);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentDidClose);
 }  // namespace

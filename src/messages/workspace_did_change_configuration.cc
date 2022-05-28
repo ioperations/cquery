@@ -9,24 +9,24 @@
 #include "working_files.h"
 
 namespace {
-MethodType kMethodType = "workspace/didChangeConfiguration";
+MethodType k_method_type = "workspace/didChangeConfiguration";
 
-struct lsDidChangeConfigurationParams {
+struct LsDidChangeConfigurationParams {
     bool placeholder;
 };
-MAKE_REFLECT_STRUCT(lsDidChangeConfigurationParams, placeholder);
+MAKE_REFLECT_STRUCT(LsDidChangeConfigurationParams, placeholder);
 
-struct In_WorkspaceDidChangeConfiguration : public NotificationInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
-    lsDidChangeConfigurationParams params;
+struct InWorkspaceDidChangeConfiguration : public NotificationInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
+    LsDidChangeConfigurationParams params;
 };
-MAKE_REFLECT_STRUCT(In_WorkspaceDidChangeConfiguration, params);
-REGISTER_IN_MESSAGE(In_WorkspaceDidChangeConfiguration);
+MAKE_REFLECT_STRUCT(InWorkspaceDidChangeConfiguration, params);
+REGISTER_IN_MESSAGE(InWorkspaceDidChangeConfiguration);
 
-struct Handler_WorkspaceDidChangeConfiguration
-    : BaseMessageHandler<In_WorkspaceDidChangeConfiguration> {
-    MethodType GetMethodType() const override { return kMethodType; }
-    void Run(In_WorkspaceDidChangeConfiguration* request) override {
+struct HandlerWorkspaceDidChangeConfiguration
+    : BaseMessageHandler<InWorkspaceDidChangeConfiguration> {
+    MethodType GetMethodType() const override { return k_method_type; }
+    void Run(InWorkspaceDidChangeConfiguration* request) override {
         Timer time;
         project->Load(g_config->projectRoot);
         time.ResetAndPrint("[perf] Loaded compilation entries (" +
@@ -42,5 +42,5 @@ struct Handler_WorkspaceDidChangeConfiguration
         LOG_S(INFO) << "Flushed all clang complete sessions";
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_WorkspaceDidChangeConfiguration);
+REGISTER_MESSAGE_HANDLER(HandlerWorkspaceDidChangeConfiguration);
 }  // namespace

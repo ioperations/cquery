@@ -5,20 +5,20 @@
 #include "queue_manager.h"
 
 namespace {
-MethodType kMethodType = "textDocument/implementation";
+MethodType k_method_type = "textDocument/implementation";
 
-struct In_TextDocumentImplementation : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InTextDocumentImplementation : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
     LsTextDocumentPositionParams params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentImplementation, id, params);
-REGISTER_IN_MESSAGE(In_TextDocumentImplementation);
+MAKE_REFLECT_STRUCT(InTextDocumentImplementation, id, params);
+REGISTER_IN_MESSAGE(InTextDocumentImplementation);
 
-struct Handler_TextDocumentImplementation
-    : BaseMessageHandler<In_TextDocumentImplementation> {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct HandlerTextDocumentImplementation
+    : BaseMessageHandler<InTextDocumentImplementation> {
+    MethodType GetMethodType() const override { return k_method_type; }
 
-    void Run(In_TextDocumentImplementation* request) override {
+    void Run(InTextDocumentImplementation* request) override {
         QueryFile* file;
         if (!FindFileOrFail(db, project, request->id,
                             request->params.text_document.uri.GetAbsolutePath(),
@@ -39,7 +39,8 @@ struct Handler_TextDocumentImplementation
                 out.result = GetLsLocations(db, working_files,
                                             GetDeclarations(db, type.derived));
                 break;
-            } else if (sym.kind == SymbolKind::Func) {
+            }
+            if (sym.kind == SymbolKind::Func) {
                 QueryFunc& func = db->GetFunc(sym);
                 out.result = GetLsLocations(db, working_files,
                                             GetDeclarations(db, func.derived));
@@ -49,8 +50,8 @@ struct Handler_TextDocumentImplementation
 
         if (out.result.size() >= g_config->xref.maxNum)
             out.result.resize(g_config->xref.maxNum);
-        QueueManager::WriteStdout(kMethodType, out);
+        QueueManager::WriteStdout(k_method_type, out);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentImplementation);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentImplementation);
 }  // namespace

@@ -116,22 +116,22 @@ std::shared_ptr<ICacheManager> ICacheManager::MakeFake(
 ICacheManager::~ICacheManager() = default;
 
 IndexFile* ICacheManager::TryLoad(const std::string& path) {
-    auto it = caches_.find(path);
-    if (it != caches_.end()) return it->second.get();
+    auto it = m_caches.find(path);
+    if (it != m_caches.end()) return it->second.get();
 
     std::unique_ptr<IndexFile> cache = RawCacheLoad(path);
     if (!cache) return nullptr;
 
-    caches_[path] = std::move(cache);
-    return caches_[path].get();
+    m_caches[path] = std::move(cache);
+    return m_caches[path].get();
 }
 
 std::unique_ptr<IndexFile> ICacheManager::TryTakeOrLoad(
     const std::string& path) {
-    auto it = caches_.find(path);
-    if (it != caches_.end()) {
+    auto it = m_caches.find(path);
+    if (it != m_caches.end()) {
         auto result = std::move(it->second);
-        caches_.erase(it);
+        m_caches.erase(it);
         return result;
     }
 
@@ -145,7 +145,7 @@ std::unique_ptr<IndexFile> ICacheManager::TakeOrLoad(const std::string& path) {
 }
 
 void ICacheManager::IterateLoadedCaches(std::function<void(IndexFile*)> fn) {
-    for (const auto& cache : caches_) {
+    for (const auto& cache : m_caches) {
         assert(cache.second);
         fn(cache.second.get());
     }

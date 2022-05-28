@@ -3,19 +3,19 @@
 #include "queue_manager.h"
 
 namespace {
-MethodType kMethodType = "textDocument/typeDefinition";
+MethodType k_method_type = "textDocument/typeDefinition";
 
-struct In_TextDocumentTypeDefinition : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InTextDocumentTypeDefinition : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
     LsTextDocumentPositionParams params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentTypeDefinition, id, params);
-REGISTER_IN_MESSAGE(In_TextDocumentTypeDefinition);
+MAKE_REFLECT_STRUCT(InTextDocumentTypeDefinition, id, params);
+REGISTER_IN_MESSAGE(InTextDocumentTypeDefinition);
 
-struct Handler_TextDocumentTypeDefinition
-    : BaseMessageHandler<In_TextDocumentTypeDefinition> {
-    MethodType GetMethodType() const override { return kMethodType; }
-    void Run(In_TextDocumentTypeDefinition* request) override {
+struct HandlerTextDocumentTypeDefinition
+    : BaseMessageHandler<InTextDocumentTypeDefinition> {
+    MethodType GetMethodType() const override { return k_method_type; }
+    void Run(InTextDocumentTypeDefinition* request) override {
         QueryFile* file;
         if (!FindFileOrFail(db, project, request->id,
                             request->params.text_document.uri.GetAbsolutePath(),
@@ -52,9 +52,9 @@ struct Handler_TextDocumentTypeDefinition
             }
         }
 
-        QueueManager::WriteStdout(kMethodType, out);
+        QueueManager::WriteStdout(k_method_type, out);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentTypeDefinition);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentTypeDefinition);
 
 }  // namespace

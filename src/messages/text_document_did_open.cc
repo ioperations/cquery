@@ -10,14 +10,14 @@
 #include "working_files.h"
 
 namespace {
-MethodType kMethodType = "textDocument/didOpen";
+MethodType k_method_type = "textDocument/didOpen";
 
 // Open, view, change, close file
-struct In_TextDocumentDidOpen : public NotificationInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InTextDocumentDidOpen : public NotificationInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
 
     struct Params {
-        LsTextDocumentItem textDocument;
+        LsTextDocumentItem text_document;
 
         // cquery extension
         // If specified (e.g. ["clang++", "-DM", "a.cc"]), it overrides the
@@ -26,24 +26,23 @@ struct In_TextDocumentDidOpen : public NotificationInMessage {
     };
     Params params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentDidOpen::Params, textDocument, args);
-MAKE_REFLECT_STRUCT(In_TextDocumentDidOpen, params);
-REGISTER_IN_MESSAGE(In_TextDocumentDidOpen);
+MAKE_REFLECT_STRUCT(InTextDocumentDidOpen::Params, text_document, args);
+MAKE_REFLECT_STRUCT(InTextDocumentDidOpen, params);
+REGISTER_IN_MESSAGE(InTextDocumentDidOpen);
 
-struct Handler_TextDocumentDidOpen
-    : BaseMessageHandler<In_TextDocumentDidOpen> {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct HandlerTextDocumentDidOpen : BaseMessageHandler<InTextDocumentDidOpen> {
+    MethodType GetMethodType() const override { return k_method_type; }
 
-    void Run(In_TextDocumentDidOpen* request) override {
+    void Run(InTextDocumentDidOpen* request) override {
         // NOTE: This function blocks code lens. If it starts taking a long time
         // we will need to find a way to unblock the code lens request.
         const auto& params = request->params;
         Timer time;
-        AbsolutePath path = params.textDocument.uri.GetAbsolutePath();
+        AbsolutePath path = params.text_document.uri.GetAbsolutePath();
         if (ShouldIgnoreFileForIndexing(path)) return;
 
         std::shared_ptr<ICacheManager> cache_manager = ICacheManager::Make();
-        WorkingFile* working_file = working_files->OnOpen(params.textDocument);
+        WorkingFile* working_file = working_files->OnOpen(params.text_document);
         optional<std::string> cached_file_contents =
             cache_manager->LoadCachedFileContents(path);
         if (cached_file_contents)
@@ -67,7 +66,7 @@ struct Handler_TextDocumentDidOpen
         QueueManager::Instance()->index_request.Enqueue(
             Index_Request(entry.filename,
                           params.args.size() ? params.args : entry.args,
-                          true /*is_interactive*/, params.textDocument.text,
+                          true /*is_interactive*/, params.text_document.text,
                           cache_manager),
             true /*priority*/);
 
@@ -80,5 +79,5 @@ struct Handler_TextDocumentDidOpen
         clang_complete->NotifyView(path);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentDidOpen);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentDidOpen);
 }  // namespace

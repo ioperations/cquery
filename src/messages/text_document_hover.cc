@@ -3,7 +3,7 @@
 #include "queue_manager.h"
 
 namespace {
-MethodType kMethodType = "textDocument/hover";
+MethodType k_method_type = "textDocument/hover";
 
 // Find the comments for |sym|, if any.
 optional<LsMarkedString> GetComments(QueryDatabase* db,
@@ -46,14 +46,14 @@ optional<LsMarkedString> GetHoverOrName(QueryDatabase* db,
     return result;
 }
 
-struct In_TextDocumentHover : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InTextDocumentHover : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
     LsTextDocumentPositionParams params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentHover, id, params);
-REGISTER_IN_MESSAGE(In_TextDocumentHover);
+MAKE_REFLECT_STRUCT(InTextDocumentHover, id, params);
+REGISTER_IN_MESSAGE(InTextDocumentHover);
 
-struct Out_TextDocumentHover : public LsOutMessage<Out_TextDocumentHover> {
+struct OutTextDocumentHover : public LsOutMessage<OutTextDocumentHover> {
     struct Result {
         std::vector<LsMarkedString> contents;
         optional<LsRange> range;
@@ -62,13 +62,13 @@ struct Out_TextDocumentHover : public LsOutMessage<Out_TextDocumentHover> {
     LsRequestId id;
     optional<Result> result;
 };
-MAKE_REFLECT_STRUCT(Out_TextDocumentHover::Result, contents, range);
-MAKE_REFLECT_STRUCT_OPTIONALS_MANDATORY(Out_TextDocumentHover, jsonrpc, id,
+MAKE_REFLECT_STRUCT(OutTextDocumentHover::Result, contents, range);
+MAKE_REFLECT_STRUCT_OPTIONALS_MANDATORY(OutTextDocumentHover, jsonrpc, id,
                                         result);
 
-struct Handler_TextDocumentHover : BaseMessageHandler<In_TextDocumentHover> {
-    MethodType GetMethodType() const override { return kMethodType; }
-    void Run(In_TextDocumentHover* request) override {
+struct HandlerTextDocumentHover : BaseMessageHandler<InTextDocumentHover> {
+    MethodType GetMethodType() const override { return k_method_type; }
+    void Run(InTextDocumentHover* request) override {
         QueryFile* file;
         if (!FindFileOrFail(db, project, request->id,
                             request->params.text_document.uri.GetAbsolutePath(),
@@ -79,7 +79,7 @@ struct Handler_TextDocumentHover : BaseMessageHandler<In_TextDocumentHover> {
         WorkingFile* working_file =
             working_files->GetFileByFilename(file->def->path);
 
-        Out_TextDocumentHover out;
+        OutTextDocumentHover out;
         out.id = request->id;
 
         for (QueryId::SymbolRef sym : FindSymbolsAtLocation(
@@ -93,7 +93,7 @@ struct Handler_TextDocumentHover : BaseMessageHandler<In_TextDocumentHover> {
             optional<LsMarkedString> hover =
                 GetHoverOrName(db, file->def->language, sym);
             if (comments || hover) {
-                out.result = Out_TextDocumentHover::Result();
+                out.result = OutTextDocumentHover::Result();
                 out.result->range = *ls_range;
                 if (comments) out.result->contents.push_back(*comments);
                 if (hover) out.result->contents.push_back(*hover);
@@ -101,8 +101,8 @@ struct Handler_TextDocumentHover : BaseMessageHandler<In_TextDocumentHover> {
             }
         }
 
-        QueueManager::WriteStdout(kMethodType, out);
+        QueueManager::WriteStdout(k_method_type, out);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentHover);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentHover);
 }  // namespace

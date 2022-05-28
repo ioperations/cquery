@@ -4,26 +4,26 @@
 #include "symbol.h"
 
 namespace {
-MethodType kMethodType = "textDocument/documentHighlight";
+MethodType k_method_type = "textDocument/documentHighlight";
 
-struct In_TextDocumentDocumentHighlight : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InTextDocumentDocumentHighlight : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
     LsTextDocumentPositionParams params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentDocumentHighlight, id, params);
-REGISTER_IN_MESSAGE(In_TextDocumentDocumentHighlight);
+MAKE_REFLECT_STRUCT(InTextDocumentDocumentHighlight, id, params);
+REGISTER_IN_MESSAGE(InTextDocumentDocumentHighlight);
 
-struct Out_TextDocumentDocumentHighlight
-    : public LsOutMessage<Out_TextDocumentDocumentHighlight> {
+struct OutTextDocumentDocumentHighlight
+    : public LsOutMessage<OutTextDocumentDocumentHighlight> {
     LsRequestId id;
     std::vector<LsDocumentHighlight> result;
 };
-MAKE_REFLECT_STRUCT(Out_TextDocumentDocumentHighlight, jsonrpc, id, result);
+MAKE_REFLECT_STRUCT(OutTextDocumentDocumentHighlight, jsonrpc, id, result);
 
-struct Handler_TextDocumentDocumentHighlight
-    : BaseMessageHandler<In_TextDocumentDocumentHighlight> {
-    MethodType GetMethodType() const override { return kMethodType; }
-    void Run(In_TextDocumentDocumentHighlight* request) override {
+struct HandlerTextDocumentDocumentHighlight
+    : BaseMessageHandler<InTextDocumentDocumentHighlight> {
+    MethodType GetMethodType() const override { return k_method_type; }
+    void Run(InTextDocumentDocumentHighlight* request) override {
         QueryId::File file_id;
         QueryFile* file;
         if (!FindFileOrFail(db, project, request->id,
@@ -35,7 +35,7 @@ struct Handler_TextDocumentDocumentHighlight
         WorkingFile* working_file =
             working_files->GetFileByFilename(file->def->path);
 
-        Out_TextDocumentDocumentHighlight out;
+        OutTextDocumentDocumentHighlight out;
         out.id = request->id;
 
         for (QueryId::SymbolRef sym : FindSymbolsAtLocation(
@@ -59,8 +59,8 @@ struct Handler_TextDocumentDocumentHighlight
             break;
         }
 
-        QueueManager::WriteStdout(kMethodType, out);
+        QueueManager::WriteStdout(k_method_type, out);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentDocumentHighlight);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentDocumentHighlight);
 }  // namespace

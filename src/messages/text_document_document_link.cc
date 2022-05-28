@@ -6,61 +6,61 @@
 #include "working_files.h"
 
 namespace {
-MethodType kMethodType = "textDocument/documentLink";
+MethodType k_method_type = "textDocument/documentLink";
 
-struct In_TextDocumentDocumentLink : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InTextDocumentDocumentLink : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
     struct Params {
         // The document to provide document links for.
-        LsTextDocumentIdentifier textDocument;
+        LsTextDocumentIdentifier text_document;
     };
     Params params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentDocumentLink::Params, textDocument);
-MAKE_REFLECT_STRUCT(In_TextDocumentDocumentLink, id, params);
-REGISTER_IN_MESSAGE(In_TextDocumentDocumentLink);
+MAKE_REFLECT_STRUCT(InTextDocumentDocumentLink::Params, text_document);
+MAKE_REFLECT_STRUCT(InTextDocumentDocumentLink, id, params);
+REGISTER_IN_MESSAGE(InTextDocumentDocumentLink);
 
 // A document link is a range in a text document that links to an internal or
 // external resource, like another text document or a web site.
-struct lsDocumentLink {
+struct LsDocumentLink {
     // The range this link applies to.
     LsRange range;
     // The uri this link points to. If missing a resolve request is sent later.
     optional<LsDocumentUri> target;
 };
-MAKE_REFLECT_STRUCT(lsDocumentLink, range, target);
+MAKE_REFLECT_STRUCT(LsDocumentLink, range, target);
 
-struct Out_TextDocumentDocumentLink
-    : public LsOutMessage<Out_TextDocumentDocumentLink> {
+struct OutTextDocumentDocumentLink
+    : public LsOutMessage<OutTextDocumentDocumentLink> {
     LsRequestId id;
-    std::vector<lsDocumentLink> result;
+    std::vector<LsDocumentLink> result;
 };
-MAKE_REFLECT_STRUCT(Out_TextDocumentDocumentLink, jsonrpc, id, result);
+MAKE_REFLECT_STRUCT(OutTextDocumentDocumentLink, jsonrpc, id, result);
 
-struct Handler_TextDocumentDocumentLink
-    : BaseMessageHandler<In_TextDocumentDocumentLink> {
-    MethodType GetMethodType() const override { return kMethodType; }
-    void Run(In_TextDocumentDocumentLink* request) override {
-        Out_TextDocumentDocumentLink out;
+struct HandlerTextDocumentDocumentLink
+    : BaseMessageHandler<InTextDocumentDocumentLink> {
+    MethodType GetMethodType() const override { return k_method_type; }
+    void Run(InTextDocumentDocumentLink* request) override {
+        OutTextDocumentDocumentLink out;
         out.id = request->id;
 
         if (g_config->showDocumentLinksOnIncludes &&
             !ShouldIgnoreFileForIndexing(
-                request->params.textDocument.uri.GetAbsolutePath())) {
+                request->params.text_document.uri.GetAbsolutePath())) {
             QueryFile* file;
             if (!FindFileOrFail(
                     db, project, request->id,
-                    request->params.textDocument.uri.GetAbsolutePath(),
+                    request->params.text_document.uri.GetAbsolutePath(),
                     &file)) {
                 return;
             }
 
             WorkingFile* working_file = working_files->GetFileByFilename(
-                request->params.textDocument.uri.GetAbsolutePath());
+                request->params.text_document.uri.GetAbsolutePath());
             if (!working_file) {
                 LOG_S(WARNING)
                     << "Unable to find working file "
-                    << request->params.textDocument.uri.GetAbsolutePath();
+                    << request->params.text_document.uri.GetAbsolutePath();
                 return;
             }
             for (const IndexInclude& include : file->def->includes) {
@@ -75,15 +75,15 @@ struct Handler_TextDocumentDocumentLink
                     *buffer_line, working_file->buffer_lines[*buffer_line]);
                 if (!between_quotes) continue;
 
-                lsDocumentLink link;
+                LsDocumentLink link;
                 link.target = LsDocumentUri::FromPath(include.resolved_path);
                 link.range = *between_quotes;
                 out.result.push_back(link);
             }
         }
 
-        QueueManager::WriteStdout(kMethodType, out);
+        QueueManager::WriteStdout(k_method_type, out);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentDocumentLink);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentDocumentLink);
 }  // namespace

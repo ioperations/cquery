@@ -6,65 +6,65 @@
 #include "serializer.h"
 
 class JsonReader : public Reader {
-    rapidjson::GenericValue<rapidjson::UTF8<>>* m_;
-    std::vector<const char*> path_;
+    rapidjson::GenericValue<rapidjson::UTF8<>>* m;
+    std::vector<const char*> path;
 
    public:
-    JsonReader(rapidjson::GenericValue<rapidjson::UTF8<>>* m) : m_(m) {}
+    JsonReader(rapidjson::GenericValue<rapidjson::UTF8<>>* m) : m(m) {}
     serialize_format Format() const override { return serialize_format::Json; }
 
-    bool IsBool() override { return m_->IsBool(); }
-    bool IsNull() override { return m_->IsNull(); }
-    bool IsArray() override { return m_->IsArray(); }
-    bool IsInt() override { return m_->IsInt(); }
-    bool IsInt64() override { return m_->IsInt64(); }
-    bool IsUint64() override { return m_->IsUint64(); }
-    bool IsDouble() override { return m_->IsDouble(); }
-    bool IsString() override { return m_->IsString(); }
+    bool IsBool() override { return m->IsBool(); }
+    bool IsNull() override { return m->IsNull(); }
+    bool IsArray() override { return m->IsArray(); }
+    bool IsInt() override { return m->IsInt(); }
+    bool IsInt64() override { return m->IsInt64(); }
+    bool IsUint64() override { return m->IsUint64(); }
+    bool IsDouble() override { return m->IsDouble(); }
+    bool IsString() override { return m->IsString(); }
 
     void GetNull() override {}
-    bool GetBool() override { return m_->GetBool(); }
-    int GetInt() override { return m_->GetInt(); }
-    uint32_t GetUint32() override { return uint32_t(m_->GetUint64()); }
-    int64_t GetInt64() override { return m_->GetInt64(); }
-    uint64_t GetUint64() override { return m_->GetUint64(); }
-    double GetDouble() override { return m_->GetDouble(); }
-    std::string GetString() override { return m_->GetString(); }
+    bool GetBool() override { return m->GetBool(); }
+    int GetInt() override { return m->GetInt(); }
+    uint32_t GetUint32() override { return uint32_t(m->GetUint64()); }
+    int64_t GetInt64() override { return m->GetInt64(); }
+    uint64_t GetUint64() override { return m->GetUint64(); }
+    double GetDouble() override { return m->GetDouble(); }
+    std::string GetString() override { return m->GetString(); }
 
-    bool HasMember(const char* x) override { return m_->HasMember(x); }
+    bool HasMember(const char* x) override { return m->HasMember(x); }
     std::unique_ptr<Reader> operator[](const char* x) override {
-        auto& sub = (*m_)[x];
+        auto& sub = (*m)[x];
         return std::unique_ptr<JsonReader>(new JsonReader(&sub));
     }
 
     void IterArray(std::function<void(Reader&)> fn) override {
-        if (!m_->IsArray()) throw std::invalid_argument("array");
+        if (!m->IsArray()) throw std::invalid_argument("array");
         // Use "0" to indicate any element for now.
-        path_.push_back("0");
-        for (auto& entry : m_->GetArray()) {
-            auto saved = m_;
-            m_ = &entry;
+        path.push_back("0");
+        for (auto& entry : m->GetArray()) {
+            auto saved = m;
+            m = &entry;
             fn(*this);
-            m_ = saved;
+            m = saved;
         }
-        path_.pop_back();
+        path.pop_back();
     }
 
     void DoMember(const char* name, std::function<void(Reader&)> fn) override {
-        path_.push_back(name);
-        auto it = m_->FindMember(name);
-        if (it != m_->MemberEnd()) {
-            auto saved = m_;
-            m_ = &it->value;
+        path.push_back(name);
+        auto it = m->FindMember(name);
+        if (it != m->MemberEnd()) {
+            auto saved = m;
+            m = &it->value;
             fn(*this);
-            m_ = saved;
+            m = saved;
         }
-        path_.pop_back();
+        path.pop_back();
     }
 
     std::string GetPath() const {
         std::string ret;
-        for (auto& t : path_) {
+        for (auto& t : path) {
             ret += '/';
             ret += t;
         }

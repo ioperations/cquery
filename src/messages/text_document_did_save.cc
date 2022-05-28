@@ -7,14 +7,14 @@
 #include "queue_manager.h"
 
 namespace {
-MethodType kMethodType = "textDocument/didSave";
+MethodType k_method_type = "textDocument/didSave";
 
-struct In_TextDocumentDidSave : public NotificationInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InTextDocumentDidSave : public NotificationInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
 
     struct Params {
         // The document that was saved.
-        LsTextDocumentIdentifier textDocument;
+        LsTextDocumentIdentifier text_document;
 
         // Optional the content when saved. Depends on the includeText value
         // when the save notifcation was requested.
@@ -22,16 +22,15 @@ struct In_TextDocumentDidSave : public NotificationInMessage {
     };
     Params params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentDidSave::Params, textDocument);
-MAKE_REFLECT_STRUCT(In_TextDocumentDidSave, params);
-REGISTER_IN_MESSAGE(In_TextDocumentDidSave);
+MAKE_REFLECT_STRUCT(InTextDocumentDidSave::Params, text_document);
+MAKE_REFLECT_STRUCT(InTextDocumentDidSave, params);
+REGISTER_IN_MESSAGE(InTextDocumentDidSave);
 
-struct Handler_TextDocumentDidSave
-    : BaseMessageHandler<In_TextDocumentDidSave> {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct HandlerTextDocumentDidSave : BaseMessageHandler<InTextDocumentDidSave> {
+    MethodType GetMethodType() const override { return k_method_type; }
 
-    void Run(In_TextDocumentDidSave* request) override {
-        AbsolutePath path = request->params.textDocument.uri.GetAbsolutePath();
+    void Run(InTextDocumentDidSave* request) override {
+        AbsolutePath path = request->params.text_document.uri.GetAbsolutePath();
         if (ShouldIgnoreFileForIndexing(path)) return;
 
         // Send out an index request, and copy the current buffer state so we
@@ -61,5 +60,5 @@ struct Handler_TextDocumentDidSave
         clang_complete->DiagnosticsUpdate(path);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentDidSave);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentDidSave);
 }  // namespace

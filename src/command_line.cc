@@ -195,8 +195,8 @@ bool QueryDbMainLoop(QueryDatabase* db, Project* project,
         message = queue->for_querydb.TryDequeue(true /*priority*/);
     }
 
-    if (QueryDb_ImportMain(db, import_manager, status, semantic_cache,
-                           working_files)) {
+    if (QueryDbImportMain(db, import_manager, status, semantic_cache,
+                          working_files)) {
         did_work = true;
     }
 
@@ -217,7 +217,7 @@ void RunQueryDbThread(const std::string& bin_name) {
         },
         [](LsRequestId id) {
             if (id.has_value()) {
-                Out_Error out;
+                OutError out;
                 out.id = id;
                 out.error.code = lsErrorCodes::InternalError;
                 out.error.message =
@@ -322,7 +322,7 @@ void LaunchStdinLoop(std::unordered_map<MethodType, Timer>* request_times) {
                 if (message) {
                     LsRequestId id = message->GetRequestId();
                     if (id.has_value()) {
-                        Out_Error out;
+                        OutError out;
                         out.id = id;
                         out.error.code = lsErrorCodes::InvalidParams;
                         out.error.message = std::move(*err);

@@ -8,21 +8,21 @@
 #include "working_files.h"
 
 namespace {
-MethodType kMethodType = "textDocument/didChange";
+MethodType k_method_type = "textDocument/didChange";
 
-struct In_TextDocumentDidChange : public NotificationInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InTextDocumentDidChange : public NotificationInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
     LsTextDocumentDidChangeParams params;
 };
 
-MAKE_REFLECT_STRUCT(In_TextDocumentDidChange, params);
-REGISTER_IN_MESSAGE(In_TextDocumentDidChange);
+MAKE_REFLECT_STRUCT(InTextDocumentDidChange, params);
+REGISTER_IN_MESSAGE(InTextDocumentDidChange);
 
-struct Handler_TextDocumentDidChange
-    : BaseMessageHandler<In_TextDocumentDidChange> {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct HandlerTextDocumentDidChange
+    : BaseMessageHandler<InTextDocumentDidChange> {
+    MethodType GetMethodType() const override { return k_method_type; }
 
-    void Run(In_TextDocumentDidChange* request) override {
+    void Run(InTextDocumentDidChange* request) override {
         AbsolutePath path = request->params.text_document.uri.GetAbsolutePath();
         working_files->OnChange(request->params);
         if (g_config->enableIndexOnDidChange) {
@@ -38,5 +38,5 @@ struct Handler_TextDocumentDidChange
         clang_complete->DiagnosticsUpdate(path);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentDidChange);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentDidChange);
 }  // namespace

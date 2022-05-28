@@ -9,14 +9,14 @@
 #include "queue_manager.h"
 
 namespace {
-MethodType kMethodType = "textDocument/definition";
+MethodType k_method_type = "textDocument/definition";
 
-struct In_TextDocumentDefinition : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InTextDocumentDefinition : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
     LsTextDocumentPositionParams params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentDefinition, id, params);
-REGISTER_IN_MESSAGE(In_TextDocumentDefinition);
+MAKE_REFLECT_STRUCT(InTextDocumentDefinition, id, params);
+REGISTER_IN_MESSAGE(InTextDocumentDefinition);
 
 std::vector<QueryId::LexicalRef> GetNonDefDeclarationTargets(
     QueryDatabase* db, QueryId::SymbolRef sym) {
@@ -42,10 +42,10 @@ std::vector<QueryId::LexicalRef> GetNonDefDeclarationTargets(
     }
 }
 
-struct Handler_TextDocumentDefinition
-    : BaseMessageHandler<In_TextDocumentDefinition> {
-    MethodType GetMethodType() const override { return kMethodType; }
-    void Run(In_TextDocumentDefinition* request) override {
+struct HandlerTextDocumentDefinition
+    : BaseMessageHandler<InTextDocumentDefinition> {
+    MethodType GetMethodType() const override { return k_method_type; }
+    void Run(InTextDocumentDefinition* request) override {
         QueryId::File file_id;
         QueryFile* file;
         if (!FindFileOrFail(db, project, request->id,
@@ -172,8 +172,8 @@ struct Handler_TextDocumentDefinition
             }
         }
 
-        QueueManager::WriteStdout(kMethodType, out);
+        QueueManager::WriteStdout(k_method_type, out);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentDefinition);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentDefinition);
 }  // namespace

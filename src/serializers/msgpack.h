@@ -5,37 +5,37 @@
 #include "serializer.h"
 
 class MessagePackReader : public Reader {
-    msgpack::unpacker* pk_;
-    msgpack::object_handle oh_;
+    msgpack::unpacker* pk;
+    msgpack::object_handle oh;
 
     template <typename T>
     T Get() {
-        T ret = oh_.get().as<T>();
-        pk_->next(oh_);
+        T ret = oh.get().as<T>();
+        pk->next(oh);
         return ret;
     }
 
    public:
-    MessagePackReader(msgpack::unpacker* pk) : pk_(pk) { pk->next(oh_); }
+    MessagePackReader(msgpack::unpacker* pk) : pk(pk) { pk->next(oh); }
     serialize_format Format() const override {
         return serialize_format::MessagePack;
     }
 
-    bool IsBool() override { return oh_.get().type == msgpack::type::BOOLEAN; }
-    bool IsNull() override { return oh_.get().is_nil(); }
-    bool IsArray() override { return oh_.get().type == msgpack::type::ARRAY; }
+    bool IsBool() override { return oh.get().type == msgpack::type::BOOLEAN; }
+    bool IsNull() override { return oh.get().is_nil(); }
+    bool IsArray() override { return oh.get().type == msgpack::type::ARRAY; }
     bool IsInt() override {
-        return oh_.get().type == msgpack::type::POSITIVE_INTEGER ||
-               oh_.get().type == msgpack::type::NEGATIVE_INTEGER;
+        return oh.get().type == msgpack::type::POSITIVE_INTEGER ||
+               oh.get().type == msgpack::type::NEGATIVE_INTEGER;
     }
     bool IsInt64() override { return IsInt(); }
     bool IsUint64() override { return IsInt(); }
     bool IsDouble() override {
-        return oh_.get().type == msgpack::type::FLOAT64;
+        return oh.get().type == msgpack::type::FLOAT64;
     };
-    bool IsString() override { return oh_.get().type == msgpack::type::STR; }
+    bool IsString() override { return oh.get().type == msgpack::type::STR; }
 
-    void GetNull() override { pk_->next(oh_); }
+    void GetNull() override { pk->next(oh); }
     bool GetBool() override { return Get<bool>(); }
     int GetInt() override { return Get<int>(); }
     uint32_t GetUint32() override { return Get<uint32_t>(); }
@@ -58,27 +58,27 @@ class MessagePackReader : public Reader {
 };
 
 class MessagePackWriter : public Writer {
-    msgpack::packer<msgpack::sbuffer>* m_;
+    msgpack::packer<msgpack::sbuffer>* m;
 
    public:
-    MessagePackWriter(msgpack::packer<msgpack::sbuffer>* m) : m_(m) {}
+    MessagePackWriter(msgpack::packer<msgpack::sbuffer>* m) : m(m) {}
     serialize_format Format() const override {
         return serialize_format::MessagePack;
     }
 
-    void Null() override { m_->pack_nil(); }
-    void Bool(bool x) override { m_->pack(x); }
-    void Int(int x) override { m_->pack(x); }
-    void Uint32(uint32_t x) override { m_->pack(x); }
-    void Int64(int64_t x) override { m_->pack(x); }
-    void Uint64(uint64_t x) override { m_->pack(x); }
-    void Double(double x) override { m_->pack(x); }
-    void String(const char* x) override { m_->pack(x); }
+    void Null() override { m->pack_nil(); }
+    void Bool(bool x) override { m->pack(x); }
+    void Int(int x) override { m->pack(x); }
+    void Uint32(uint32_t x) override { m->pack(x); }
+    void Int64(int64_t x) override { m->pack(x); }
+    void Uint64(uint64_t x) override { m->pack(x); }
+    void Double(double x) override { m->pack(x); }
+    void String(const char* x) override { m->pack(x); }
     // TODO Remove std::string
     void String(const char* x, size_t len) override {
-        m_->pack(std::string(x, len));
+        m->pack(std::string(x, len));
     }
-    void StartArray(size_t n) override { m_->pack(n); }
+    void StartArray(size_t n) override { m->pack(n); }
     void EndArray() override {}
     void StartObject() override {}
     void EndObject() override {}

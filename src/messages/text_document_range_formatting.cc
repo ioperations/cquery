@@ -7,40 +7,40 @@
 #include "working_files.h"
 
 namespace {
-MethodType kMethodType = "textDocument/rangeFormatting";
+MethodType k_method_type = "textDocument/rangeFormatting";
 
-struct lsTextDocumentRangeFormattingParams {
-    LsTextDocumentIdentifier textDocument;
+struct LsTextDocumentRangeFormattingParams {
+    LsTextDocumentIdentifier text_document;
     LsRange range;
     LsFormattingOptions options;
 };
-MAKE_REFLECT_STRUCT(lsTextDocumentRangeFormattingParams, textDocument, range,
+MAKE_REFLECT_STRUCT(LsTextDocumentRangeFormattingParams, text_document, range,
                     options);
 
-struct In_TextDocumentRangeFormatting : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
-    lsTextDocumentRangeFormattingParams params;
+struct InTextDocumentRangeFormatting : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
+    LsTextDocumentRangeFormattingParams params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentRangeFormatting, id, params);
-REGISTER_IN_MESSAGE(In_TextDocumentRangeFormatting);
+MAKE_REFLECT_STRUCT(InTextDocumentRangeFormatting, id, params);
+REGISTER_IN_MESSAGE(InTextDocumentRangeFormatting);
 
-struct Out_TextDocumentRangeFormatting
-    : public LsOutMessage<Out_TextDocumentRangeFormatting> {
+struct OutTextDocumentRangeFormatting
+    : public LsOutMessage<OutTextDocumentRangeFormatting> {
     LsRequestId id;
     std::vector<LsTextEdit> result;
 };
-MAKE_REFLECT_STRUCT(Out_TextDocumentRangeFormatting, jsonrpc, id, result);
+MAKE_REFLECT_STRUCT(OutTextDocumentRangeFormatting, jsonrpc, id, result);
 
-struct Handler_TextDocumentRangeFormatting
-    : BaseMessageHandler<In_TextDocumentRangeFormatting> {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct HandlerTextDocumentRangeFormatting
+    : BaseMessageHandler<InTextDocumentRangeFormatting> {
+    MethodType GetMethodType() const override { return k_method_type; }
 
-    void Run(In_TextDocumentRangeFormatting* request) override {
-        Out_TextDocumentRangeFormatting response;
+    void Run(InTextDocumentRangeFormatting* request) override {
+        OutTextDocumentRangeFormatting response;
         response.id = request->id;
 
         WorkingFile* working_file = working_files->GetFileByFilename(
-            request->params.textDocument.uri.GetAbsolutePath());
+            request->params.text_document.uri.GetAbsolutePath());
 
         int start_offset = GetOffsetForPosition(request->params.range.start,
                                                 working_file->buffer_content);
@@ -50,8 +50,8 @@ struct Handler_TextDocumentRangeFormatting
             RunClangFormat(working_file->filename, working_file->buffer_content,
                            start_offset, end_offset);
 
-        QueueManager::WriteStdout(kMethodType, response);
+        QueueManager::WriteStdout(k_method_type, response);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentRangeFormatting);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentRangeFormatting);
 }  // namespace

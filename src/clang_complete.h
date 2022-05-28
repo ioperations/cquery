@@ -114,32 +114,32 @@ struct ClangCompleteManager {
     void FlushAllSessions(void);
 
     // TODO: make these configurable.
-    const int kMaxPreloadedSessions = 10;
-    const int kMaxCompletionSessions = 5;
+    const int k_max_preloaded_sessions = 10;
+    const int k_max_completion_sessions = 5;
 
     // Global state.
-    Project* project_;
-    WorkingFiles* working_files_;
-    OnDiagnostic on_diagnostic_;
-    OnDropped on_dropped_;
+    Project* m_project;
+    WorkingFiles* m_working_files;
+    OnDiagnostic m_on_diagnostic;
+    OnDropped m_on_dropped;
 
     using LruSessionCache =
         LruCache<std::string, std::shared_ptr<CompletionSession>>;
 
     // CompletionSession instances which are preloaded, ie, files which the user
     // has viewed but not requested code completion for.
-    LruSessionCache preloaded_sessions_;
+    LruSessionCache m_preloaded_sessions;
     // CompletionSession instances which the user has actually performed
     // completion on. This is more rare so these instances tend to stay alive
     // much longer than the ones in |preloaded_sessions_|.
-    LruSessionCache completion_sessions_;
+    LruSessionCache m_completion_sessions;
     // Mutex which protects |view_sessions_| and |edit_sessions_|.
-    std::mutex sessions_lock_;
+    std::mutex m_sessions_lock;
 
     // Request a code completion at the given location.
-    ThreadedQueue<std::unique_ptr<CompletionRequest>> completion_request_;
-    ThreadedQueue<std::unique_ptr<DiagnosticRequest>> diagnostics_request_;
+    ThreadedQueue<std::unique_ptr<CompletionRequest>> m_completion_request;
+    ThreadedQueue<std::unique_ptr<DiagnosticRequest>> m_diagnostics_request;
     // Parse requests. The path may already be parsed, in which case it should
     // be reparsed.
-    ThreadedQueue<PreloadRequest> preload_requests_;
+    ThreadedQueue<PreloadRequest> m_preload_requests;
 };

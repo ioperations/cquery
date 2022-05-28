@@ -14,10 +14,10 @@
 #include "working_files.h"
 
 namespace {
-MethodType kMethodType = "textDocument/completion";
+MethodType k_method_type = "textDocument/completion";
 
 // How a completion was triggered
-enum class lsCompletionTriggerKind {
+enum class ls_completion_trigger_kind {
     // Completion was triggered by typing an identifier (24x7 code
     // complete), manual invocation (e.g Ctrl+Space) or via API.
     Invoked = 1,
@@ -29,52 +29,51 @@ enum class lsCompletionTriggerKind {
 };
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-function"
-MAKE_REFLECT_TYPE_PROXY(lsCompletionTriggerKind);
+MAKE_REFLECT_TYPE_PROXY(ls_completion_trigger_kind);
 #pragma clang diagnostic pop
 
 // Contains additional information about the context in which a completion
 // request is triggered.
-struct lsCompletionContext {
+struct LsCompletionContext {
     // How the completion was triggered.
-    lsCompletionTriggerKind triggerKind;
+    ls_completion_trigger_kind trigger_kind;
 
     // The trigger character (a single character) that has trigger code
     // complete. Is undefined if `triggerKind !==
     // CompletionTriggerKind.TriggerCharacter`
-    optional<std::string> triggerCharacter;
+    optional<std::string> trigger_character;
 };
-MAKE_REFLECT_STRUCT(lsCompletionContext, triggerKind, triggerCharacter);
+MAKE_REFLECT_STRUCT(LsCompletionContext, trigger_kind, trigger_character);
 
-struct lsCompletionParams : LsTextDocumentPositionParams {
+struct LsCompletionParams : LsTextDocumentPositionParams {
     // The completion context. This is only available it the client specifies to
     // send this using
     // `ClientCapabilities.textDocument.completion.contextSupport === true`
-    optional<lsCompletionContext> context;
+    optional<LsCompletionContext> context;
 };
-MAKE_REFLECT_STRUCT(lsCompletionParams, text_document, position, context);
+MAKE_REFLECT_STRUCT(LsCompletionParams, text_document, position, context);
 
-struct In_TextDocumentComplete : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
-    lsCompletionParams params;
+struct InTextDocumentComplete : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
+    LsCompletionParams params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentComplete, id, params);
-REGISTER_IN_MESSAGE(In_TextDocumentComplete);
+MAKE_REFLECT_STRUCT(InTextDocumentComplete, id, params);
+REGISTER_IN_MESSAGE(InTextDocumentComplete);
 
-struct lsTextDocumentCompleteResult {
+struct LsTextDocumentCompleteResult {
     // This list it not complete. Further typing should result in recomputing
     // this list.
-    bool isIncomplete = false;
+    bool is_incomplete = false;
     // The completion items.
     std::vector<lsCompletionItem> items;
 };
-MAKE_REFLECT_STRUCT(lsTextDocumentCompleteResult, isIncomplete, items);
+MAKE_REFLECT_STRUCT(LsTextDocumentCompleteResult, is_incomplete, items);
 
-struct Out_TextDocumentComplete
-    : public LsOutMessage<Out_TextDocumentComplete> {
+struct OutTextDocumentComplete : public LsOutMessage<OutTextDocumentComplete> {
     LsRequestId id;
-    lsTextDocumentCompleteResult result;
+    LsTextDocumentCompleteResult result;
 };
-MAKE_REFLECT_STRUCT(Out_TextDocumentComplete, jsonrpc, id, result);
+MAKE_REFLECT_STRUCT(OutTextDocumentComplete, jsonrpc, id, result);
 
 void DecorateIncludePaths(const std::smatch& match,
                           std::vector<lsCompletionItem>* items) {
@@ -125,14 +124,14 @@ ParseIncludeLineResult ParseIncludeLine(const std::string& line) {
     return {ok, match[3], match[5], match[6], match};
 }
 
-static const std::vector<std::string> preprocessorKeywords = {
+static const std::vector<std::string> preprocessor_keywords = {
     "define", "undef", "include", "if",   "ifdef", "ifndef",
     "else",   "elif",  "endif",   "line", "error", "pragma"};
 
 std::vector<lsCompletionItem> PreprocessorKeywordCompletionItems(
     const std::smatch& match) {
     std::vector<lsCompletionItem> items;
-    for (auto& keyword : preprocessorKeywords) {
+    for (auto& keyword : preprocessor_keywords) {
         lsCompletionItem item;
         item.label = keyword;
         item.priority_ = (keyword == "include" ? 2 : 1);
@@ -163,9 +162,9 @@ std::string ToSortText(size_t rank) {
 // Pre-filters completion responses before sending to vscode. This results in a
 // significantly snappier completion experience as vscode is easily overloaded
 // when given 1000+ completion items.
-void FilterAndSortCompletionResponse(
-    Out_TextDocumentComplete* complete_response,
-    const std::string& complete_text, bool has_open_paren, bool enable) {
+void FilterAndSortCompletionResponse(OutTextDocumentComplete* complete_response,
+                                     const std::string& complete_text,
+                                     bool has_open_paren, bool enable) {
     if (!enable) return;
 
     ScopedPerfTimer timer("FilterAndSortCompletionResponse");
@@ -187,10 +186,10 @@ void FilterAndSortCompletionResponse(
     auto& items = complete_response->result.items;
 
     auto finalize = [&]() {
-        const size_t kMaxResultSize = 100u;
-        if (items.size() > kMaxResultSize) {
-            items.resize(kMaxResultSize);
-            complete_response->result.isIncomplete = true;
+        const size_t k_max_result_size = 100u;
+        if (items.size() > k_max_result_size) {
+            items.resize(k_max_result_size);
+            complete_response->result.is_incomplete = true;
         }
 
         if (has_open_paren) {
@@ -222,12 +221,12 @@ void FilterAndSortCompletionResponse(
         item.score_ =
             CaseFoldingSubsequenceMatch(complete_text, *item.filterText).first
                 ? fuzzy.Match(*item.filterText)
-                : FuzzyMatcher::kMinScore;
+                : FuzzyMatcher::k_min_score;
     }
     items.erase(std::remove_if(items.begin(), items.end(),
                                [](const lsCompletionItem& item) {
                                    return item.score_ <=
-                                          FuzzyMatcher::kMinScore;
+                                          FuzzyMatcher::k_min_score;
                                }),
                 items.end());
     std::sort(items.begin(), items.end(),
@@ -268,17 +267,17 @@ bool IsOpenParenOrBracket(const std::vector<std::string>& lines,
     return false;
 }
 
-struct Handler_TextDocumentCompletion : MessageHandler {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct HandlerTextDocumentCompletion : MessageHandler {
+    MethodType GetMethodType() const override { return k_method_type; }
 
     void Run(std::unique_ptr<InMessage> message) override {
-        auto request = std::shared_ptr<In_TextDocumentComplete>(
-            static_cast<In_TextDocumentComplete*>(message.release()));
+        auto request = std::shared_ptr<InTextDocumentComplete>(
+            static_cast<InTextDocumentComplete*>(message.release()));
 
         auto write_empty_result = [request]() {
-            Out_TextDocumentComplete out;
+            OutTextDocumentComplete out;
             out.id = request->id;
-            QueueManager::WriteStdout(kMethodType, out);
+            QueueManager::WriteStdout(k_method_type, out);
         };
 
         AbsolutePath path = request->params.text_document.uri.GetAbsolutePath();
@@ -299,12 +298,12 @@ struct Handler_TextDocumentCompletion : MessageHandler {
         // Check for - and : before completing -> or ::, since vscode does not
         // support multi-character trigger characters.
         if (request->params.context &&
-            request->params.context->triggerKind ==
-                lsCompletionTriggerKind::TriggerCharacter &&
-            request->params.context->triggerCharacter) {
+            request->params.context->trigger_kind ==
+                ls_completion_trigger_kind::TriggerCharacter &&
+            request->params.context->trigger_character) {
             bool did_fail_check = false;
 
-            std::string character = *request->params.context->triggerCharacter;
+            std::string character = *request->params.context->trigger_character;
             int preceding_index = request->params.position.character - 2;
 
             // If the character is '"', '<' or '/', make sure that the line
@@ -349,13 +348,13 @@ struct Handler_TextDocumentCompletion : MessageHandler {
         bool has_open_paren = IsOpenParenOrBracket(file->buffer_lines, end_pos);
 
         if (result.ok) {
-            Out_TextDocumentComplete out;
+            OutTextDocumentComplete out;
             out.id = request->id;
 
             if (result.quote.empty() && result.pattern.empty()) {
                 // no quote or path of file, do preprocessor keyword completion
-                if (!std::any_of(preprocessorKeywords.begin(),
-                                 preprocessorKeywords.end(),
+                if (!std::any_of(preprocessor_keywords.begin(),
+                                 preprocessor_keywords.end(),
                                  [&result](std::string_view k) {
                                      return k == result.keyword;
                                  })) {
@@ -387,7 +386,7 @@ struct Handler_TextDocumentCompletion : MessageHandler {
                 item.textEdit->range.end.character = (int)buffer_line.size();
             }
 
-            QueueManager::WriteStdout(kMethodType, out);
+            QueueManager::WriteStdout(k_method_type, out);
         } else {
             ClangCompleteManager::OnComplete callback =
                 [this, request, existing_completion, end_pos,
@@ -395,7 +394,7 @@ struct Handler_TextDocumentCompletion : MessageHandler {
                  has_open_paren](const LsRequestId& id,
                                  std::vector<lsCompletionItem> results,
                                  bool is_cached_result) {
-                    Out_TextDocumentComplete out;
+                    OutTextDocumentComplete out;
                     out.id = request->id;
                     out.result.items = results;
 
@@ -411,7 +410,7 @@ struct Handler_TextDocumentCompletion : MessageHandler {
                             item.insertText};
                     }
 
-                    QueueManager::WriteStdout(kMethodType, out);
+                    QueueManager::WriteStdout(k_method_type, out);
 
                     // Cache completion results.
                     if (!is_cached_result) {
@@ -490,7 +489,7 @@ struct Handler_TextDocumentCompletion : MessageHandler {
         }
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentCompletion);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentCompletion);
 
 TEST_SUITE("Completion lexing") {
     TEST_CASE("NextCharIsOpenParen") {

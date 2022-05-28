@@ -10,19 +10,19 @@
 namespace {
 MethodType k_method_type = "workspace/didChangeWatchedFiles";
 
-enum class lsFileChangeType {
+enum class ls_file_change_type {
     Created = 1,
     Changed = 2,
     Deleted = 3,
 };
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-function"
-MAKE_REFLECT_TYPE_PROXY(lsFileChangeType);
+MAKE_REFLECT_TYPE_PROXY(ls_file_change_type);
 #pragma clang diagnostic pop
 
 struct LsFileEvent {
     LsDocumentUri uri;
-    lsFileChangeType type;
+    ls_file_change_type type;
 };
 MAKE_REFLECT_STRUCT(LsFileEvent, uri, type);
 
@@ -50,8 +50,8 @@ struct HandlerWorkspaceDidChangeWatchedFiles
             bool is_interactive =
                 working_files->GetFileByFilename(entry.filename) != nullptr;
             switch (event.type) {
-                case lsFileChangeType::Created:
-                case lsFileChangeType::Changed: {
+                case ls_file_change_type::Created:
+                case ls_file_change_type::Changed: {
                     QueueManager::Instance()->index_request.Enqueue(
                         Index_Request(path, entry.args, is_interactive, nullopt,
                                       ICacheManager::Make()),
@@ -59,7 +59,7 @@ struct HandlerWorkspaceDidChangeWatchedFiles
                     if (is_interactive) clang_complete->NotifySave(path);
                     break;
                 }
-                case lsFileChangeType::Deleted:
+                case ls_file_change_type::Deleted:
                     QueueManager::Instance()->index_request.Enqueue(
                         Index_Request(path, entry.args, is_interactive,
                                       std::string(), ICacheManager::Make()),

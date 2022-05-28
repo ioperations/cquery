@@ -3,38 +3,38 @@
 #include "queue_manager.h"
 
 namespace {
-MethodType kMethodType = "textDocument/documentSymbol";
+MethodType k_method_type = "textDocument/documentSymbol";
 
-struct lsDocumentSymbolParams {
-    LsTextDocumentIdentifier textDocument;
+struct LsDocumentSymbolParams {
+    LsTextDocumentIdentifier text_document;
 };
-MAKE_REFLECT_STRUCT(lsDocumentSymbolParams, textDocument);
+MAKE_REFLECT_STRUCT(LsDocumentSymbolParams, text_document);
 
-struct In_TextDocumentDocumentSymbol : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
-    lsDocumentSymbolParams params;
+struct InTextDocumentDocumentSymbol : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
+    LsDocumentSymbolParams params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentDocumentSymbol, id, params);
-REGISTER_IN_MESSAGE(In_TextDocumentDocumentSymbol);
+MAKE_REFLECT_STRUCT(InTextDocumentDocumentSymbol, id, params);
+REGISTER_IN_MESSAGE(InTextDocumentDocumentSymbol);
 
-struct Out_TextDocumentDocumentSymbol
-    : public LsOutMessage<Out_TextDocumentDocumentSymbol> {
+struct OutTextDocumentDocumentSymbol
+    : public LsOutMessage<OutTextDocumentDocumentSymbol> {
     LsRequestId id;
     std::vector<LsSymbolInformation> result;
 };
-MAKE_REFLECT_STRUCT(Out_TextDocumentDocumentSymbol, jsonrpc, id, result);
+MAKE_REFLECT_STRUCT(OutTextDocumentDocumentSymbol, jsonrpc, id, result);
 
-struct Handler_TextDocumentDocumentSymbol
-    : BaseMessageHandler<In_TextDocumentDocumentSymbol> {
-    MethodType GetMethodType() const override { return kMethodType; }
-    void Run(In_TextDocumentDocumentSymbol* request) override {
-        Out_TextDocumentDocumentSymbol out;
+struct HandlerTextDocumentDocumentSymbol
+    : BaseMessageHandler<InTextDocumentDocumentSymbol> {
+    MethodType GetMethodType() const override { return k_method_type; }
+    void Run(InTextDocumentDocumentSymbol* request) override {
+        OutTextDocumentDocumentSymbol out;
         out.id = request->id;
 
         QueryFile* file;
         QueryId::File file_id;
         if (!FindFileOrFail(db, project, request->id,
-                            request->params.textDocument.uri.GetAbsolutePath(),
+                            request->params.text_document.uri.GetAbsolutePath(),
                             &file, &file_id)) {
             return;
         }
@@ -63,8 +63,8 @@ struct Handler_TextDocumentDocumentSymbol
             }
         }
 
-        QueueManager::WriteStdout(kMethodType, out);
+        QueueManager::WriteStdout(k_method_type, out);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentDocumentSymbol);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentDocumentSymbol);
 }  // namespace

@@ -428,7 +428,7 @@ void TryEnsureDocumentParsed(ClangCompleteManager* manager,
             if (diagnostic && diagnostic->range.start.line >= 0)
                 ls_diagnostics.push_back(*diagnostic);
         }
-        manager->on_diagnostic_(session->file.filename, ls_diagnostics);
+        manager->m_on_diagnostic(session->file.filename, ls_diagnostics);
     }
 }
 
@@ -436,7 +436,7 @@ void CompletionPreloadMain(ClangCompleteManager* completion_manager) {
     while (true) {
         // Fetching the completion request blocks until we have a request.
         ClangCompleteManager::PreloadRequest request =
-            completion_manager->preload_requests_.Dequeue();
+            completion_manager->m_preload_requests.Dequeue();
 
         // If we don't get a session then that means we don't care about the
         // file anymore - abandon the request.
@@ -471,13 +471,13 @@ void CompletionQueryMain(ClangCompleteManager* completion_manager) {
     while (true) {
         // Fetching the completion request blocks until we have a request.
         std::unique_ptr<ClangCompleteManager::CompletionRequest> request =
-            completion_manager->completion_request_.Dequeue();
+            completion_manager->m_completion_request.Dequeue();
 
         // Drop older requests if we're not buffering.
         while (g_config->completion.dropOldRequests &&
-               !completion_manager->completion_request_.IsEmpty()) {
-            completion_manager->on_dropped_(request->id);
-            request = completion_manager->completion_request_.Dequeue();
+               !completion_manager->m_completion_request.IsEmpty()) {
+            completion_manager->m_on_dropped(request->id);
+            request = completion_manager->m_completion_request.Dequeue();
         }
 
         std::string path = request->path;
@@ -501,7 +501,7 @@ void CompletionQueryMain(ClangCompleteManager* completion_manager) {
 
         timer.Reset();
         WorkingFiles::Snapshot snapshot =
-            completion_manager->working_files_->AsSnapshot(
+            completion_manager->m_working_files->AsSnapshot(
                 {StripFileType(path)});
         std::vector<CXUnsavedFile> unsaved = snapshot.AsUnsavedFiles();
         timer.ResetAndPrint("[complete] Creating WorkingFile snapshot");
@@ -614,7 +614,7 @@ void DiagnosticsQueryMain(ClangCompleteManager* completion_manager) {
     while (true) {
         // Fetching the completion request blocks until we have a request.
         std::unique_ptr<ClangCompleteManager::DiagnosticRequest> request =
-            completion_manager->diagnostics_request_.Dequeue();
+            completion_manager->m_diagnostics_request.Dequeue();
         if (!request || !g_config->diagnostics.onType) continue;
 
         std::string path = request->path;
@@ -638,7 +638,7 @@ void DiagnosticsQueryMain(ClangCompleteManager* completion_manager) {
 
         timer.Reset();
         WorkingFiles::Snapshot snapshot =
-            completion_manager->working_files_->AsSnapshot(
+            completion_manager->m_working_files->AsSnapshot(
                 {StripFileType(path)});
         std::vector<CXUnsavedFile> unsaved = snapshot.AsUnsavedFiles();
         timer.ResetAndPrint("[diagnostics] Creating WorkingFile snapshot");
@@ -672,7 +672,7 @@ void DiagnosticsQueryMain(ClangCompleteManager* completion_manager) {
             if (diagnostic && diagnostic->range.start.line >= 0)
                 ls_diagnostics.push_back(*diagnostic);
         }
-        completion_manager->on_diagnostic_(path, ls_diagnostics);
+        completion_manager->m_on_diagnostic(path, ls_diagnostics);
     }
 }
 
@@ -703,12 +703,12 @@ ClangCompleteManager::ClangCompleteManager(Project* project,
                                            WorkingFiles* working_files,
                                            OnDiagnostic on_diagnostic,
                                            OnDropped on_dropped)
-    : project_(project),
-      working_files_(working_files),
-      on_diagnostic_(on_diagnostic),
-      on_dropped_(on_dropped),
-      preloaded_sessions_(kMaxPreloadedSessions),
-      completion_sessions_(kMaxCompletionSessions) {
+    : m_project(project),
+      m_working_files(working_files),
+      m_on_diagnostic(on_diagnostic),
+      m_on_dropped(on_dropped),
+      m_preloaded_sessions(k_max_preloaded_sessions),
+      m_completion_sessions(k_max_completion_sessions) {
     WorkThread::StartThread("comp-query", [&]() { CompletionQueryMain(this); });
     WorkThread::StartThread("comp-preload",
                             [&]() { CompletionPreloadMain(this); });
@@ -722,7 +722,7 @@ void ClangCompleteManager::CodeComplete(
     const LsRequestId& id,
     const LsTextDocumentPositionParams& completion_location,
     const OnComplete& on_complete) {
-    completion_request_.Enqueue(
+    m_completion_request.Enqueue(
         std::make_unique<CompletionRequest>(
             id, completion_location.text_document.uri.GetAbsolutePath(),
             completion_location.position, on_complete),
@@ -731,13 +731,13 @@ void ClangCompleteManager::CodeComplete(
 
 void ClangCompleteManager::DiagnosticsUpdate(const std::string& path) {
     bool has = false;
-    diagnostics_request_.Iterate(
+    m_diagnostics_request.Iterate(
         [&](const std::unique_ptr<DiagnosticRequest>& request) {
             if (request->path == path) has = true;
         });
     if (!has) {
-        diagnostics_request_.Enqueue(std::make_unique<DiagnosticRequest>(path),
-                                     true /*priority*/);
+        m_diagnostics_request.Enqueue(std::make_unique<DiagnosticRequest>(path),
+                                      true /*priority*/);
     }
 }
 
@@ -750,7 +750,7 @@ void ClangCompleteManager::NotifyView(const AbsolutePath& filename) {
 
     // Only reparse the file if we create a new CompletionSession.
     if (EnsureCompletionOrCreatePreloadSession(filename))
-        preload_requests_.Enqueue(PreloadRequest(filename), true /*priority*/);
+        m_preload_requests.Enqueue(PreloadRequest(filename), true /*priority*/);
 }
 
 void ClangCompleteManager::NotifyEdit(const AbsolutePath& filename) {
@@ -769,7 +769,7 @@ void ClangCompleteManager::NotifySave(const AbsolutePath& filename) {
     //
 
     EnsureCompletionOrCreatePreloadSession(filename);
-    preload_requests_.Enqueue(PreloadRequest(filename), true /*priority*/);
+    m_preload_requests.Enqueue(PreloadRequest(filename), true /*priority*/);
 }
 
 void ClangCompleteManager::NotifyClose(const AbsolutePath& filename) {
@@ -777,16 +777,16 @@ void ClangCompleteManager::NotifyClose(const AbsolutePath& filename) {
     // On close, we clear any existing CompletionSession instance.
     //
 
-    std::lock_guard<std::mutex> lock(sessions_lock_);
+    std::lock_guard<std::mutex> lock(m_sessions_lock);
 
     // Take and drop. It's okay if we don't actually drop the file, it'll
     // eventually get pushed out of the caches as the user opens other files.
     std::shared_ptr<CompletionSession> preloaded_ptr;
-    preloaded_sessions_.TryTake(filename, &preloaded_ptr);
+    m_preloaded_sessions.TryTake(filename, &preloaded_ptr);
     LOG_IF_S(INFO, !!preloaded_ptr)
         << "Dropped preloaded-based code completion session for " << filename;
     std::shared_ptr<CompletionSession> completion_ptr;
-    completion_sessions_.TryTake(filename, &completion_ptr);
+    m_completion_sessions.TryTake(filename, &completion_ptr);
     LOG_IF_S(INFO, !!completion_ptr)
         << "Dropped completion-based code completion session for " << filename;
 
@@ -796,35 +796,35 @@ void ClangCompleteManager::NotifyClose(const AbsolutePath& filename) {
 
 bool ClangCompleteManager::EnsureCompletionOrCreatePreloadSession(
     const AbsolutePath& filename) {
-    std::lock_guard<std::mutex> lock(sessions_lock_);
+    std::lock_guard<std::mutex> lock(m_sessions_lock);
 
     // Check for an existing CompletionSession.
-    if (preloaded_sessions_.Has(filename) ||
-        completion_sessions_.Has(filename)) {
+    if (m_preloaded_sessions.Has(filename) ||
+        m_completion_sessions.Has(filename)) {
         return false;
     }
 
     // No CompletionSession, create new one.
     auto session = std::make_shared<CompletionSession>(
-        project_->FindCompilationEntryForFile(filename), working_files_);
-    preloaded_sessions_.Insert(session->file.filename, session);
+        m_project->FindCompilationEntryForFile(filename), m_working_files);
+    m_preloaded_sessions.Insert(session->file.filename, session);
     return true;
 }
 
 std::shared_ptr<CompletionSession> ClangCompleteManager::TryGetSession(
     const std::string& filename, bool mark_as_completion,
     bool create_if_needed) {
-    std::lock_guard<std::mutex> lock(sessions_lock_);
+    std::lock_guard<std::mutex> lock(m_sessions_lock);
 
     // Try to find a preloaded session.
     std::shared_ptr<CompletionSession> preloaded_session;
-    if (preloaded_sessions_.TryGet(filename, &preloaded_session)) {
+    if (m_preloaded_sessions.TryGet(filename, &preloaded_session)) {
         // If this request is for a completion, we should move it to
         // |completion_sessions|.
         if (mark_as_completion) {
             assert(!completion_sessions_.Has(filename));
-            preloaded_sessions_.TryTake(filename, nullptr);
-            completion_sessions_.Insert(filename, preloaded_session);
+            m_preloaded_sessions.TryTake(filename, nullptr);
+            m_completion_sessions.Insert(filename, preloaded_session);
         }
 
         return preloaded_session;
@@ -832,28 +832,28 @@ std::shared_ptr<CompletionSession> ClangCompleteManager::TryGetSession(
 
     // Try to find a completion session. If none create one.
     std::shared_ptr<CompletionSession> completion_session;
-    if (!completion_sessions_.TryGet(filename, &completion_session) &&
+    if (!m_completion_sessions.TryGet(filename, &completion_session) &&
         create_if_needed) {
         completion_session = std::make_shared<CompletionSession>(
-            project_->FindCompilationEntryForFile(filename), working_files_);
-        completion_sessions_.Insert(filename, completion_session);
+            m_project->FindCompilationEntryForFile(filename), m_working_files);
+        m_completion_sessions.Insert(filename, completion_session);
     }
 
     return completion_session;
 }
 
 void ClangCompleteManager::FlushSession(const std::string& filename) {
-    std::lock_guard<std::mutex> lock(sessions_lock_);
+    std::lock_guard<std::mutex> lock(m_sessions_lock);
 
-    preloaded_sessions_.TryTake(filename, nullptr);
-    completion_sessions_.TryTake(filename, nullptr);
+    m_preloaded_sessions.TryTake(filename, nullptr);
+    m_completion_sessions.TryTake(filename, nullptr);
 
     LOG_S(INFO) << "Flushed completion sessions for " << filename;
 }
 
 void ClangCompleteManager::FlushAllSessions() {
-    std::lock_guard<std::mutex> lock(sessions_lock_);
+    std::lock_guard<std::mutex> lock(m_sessions_lock);
 
-    preloaded_sessions_.Clear();
-    completion_sessions_.Clear();
+    m_preloaded_sessions.Clear();
+    m_completion_sessions.Clear();
 }

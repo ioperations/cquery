@@ -56,8 +56,8 @@ enum class lsErrorCodes {
     RequestCancelled = -32800,
 };
 MAKE_REFLECT_TYPE_PROXY(lsErrorCodes);
-struct Out_Error : public LsOutMessage<Out_Error> {
-    struct lsResponseError {
+struct OutError : public LsOutMessage<OutError> {
+    struct LsResponseError {
         // A number indicating the error type that occurred.
         lsErrorCodes code;
 
@@ -72,10 +72,10 @@ struct Out_Error : public LsOutMessage<Out_Error> {
     LsRequestId id;
 
     // The error object in case a request fails.
-    lsResponseError error;
+    LsResponseError error;
 };
-MAKE_REFLECT_STRUCT(Out_Error::lsResponseError, code, message);
-MAKE_REFLECT_STRUCT(Out_Error, jsonrpc, id, error);
+MAKE_REFLECT_STRUCT(OutError::LsResponseError, code, message);
+MAKE_REFLECT_STRUCT(OutError, jsonrpc, id, error);
 
 // Diagnostics
 struct Out_TextDocumentPublishDiagnostics

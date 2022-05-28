@@ -21,21 +21,20 @@ struct FileConsumerSharedState;
 // per-thread and constructing an instance may be extremely expensive (ie,
 // acquire a lock) and should be done as rarely as possible.
 struct IIndexer {
-  struct TestEntry {
-    std::string path;
-    int num_indexes = 0;
+    struct TestEntry {
+        std::string path;
+        int num_indexes = 0;
 
-    TestEntry(const std::string& path, int num_indexes);
-  };
+        TestEntry(const std::string& path, int num_indexes);
+    };
 
-  static std::unique_ptr<IIndexer> MakeClangIndexer();
-  static std::unique_ptr<IIndexer> MakeTestIndexer(
-      std::initializer_list<TestEntry> entries);
+    static std::unique_ptr<IIndexer> MakeClangIndexer();
+    static std::unique_ptr<IIndexer> MakeTestIndexer(
+        std::initializer_list<TestEntry> entries);
 
-  virtual ~IIndexer() = default;
-  virtual optional<std::vector<std::unique_ptr<IndexFile>>> Index(
-      FileConsumerSharedState* file_consumer_shared,
-      std::string file,
-      const std::vector<std::string>& args,
-      const std::vector<FileContents>& file_contents) = 0;
+    virtual ~IIndexer() = default;
+    virtual optional<std::vector<std::unique_ptr<IndexFile>>> Index(
+        FileConsumerSharedState* file_consumer_shared, std::string file,
+        const std::vector<std::string>& args,
+        const std::vector<FileContents>& file_contents) = 0;
 };

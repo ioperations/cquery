@@ -5,28 +5,27 @@
 #include "queue_manager.h"
 
 namespace {
-MethodType kMethodType = "textDocument/codeLens";
+MethodType k_method_type = "textDocument/codeLens";
 
-struct lsDocumentCodeLensParams {
-    LsTextDocumentIdentifier textDocument;
+struct LsDocumentCodeLensParams {
+    LsTextDocumentIdentifier text_document;
 };
-MAKE_REFLECT_STRUCT(lsDocumentCodeLensParams, textDocument);
+MAKE_REFLECT_STRUCT(LsDocumentCodeLensParams, text_document);
 
 using TCodeLens = LsCodeLens<LsCodeLensUserData, LsCodeLensCommandArguments>;
-struct In_TextDocumentCodeLens : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
-    lsDocumentCodeLensParams params;
+struct InTextDocumentCodeLens : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
+    LsDocumentCodeLensParams params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentCodeLens, id, params);
-REGISTER_IN_MESSAGE(In_TextDocumentCodeLens);
+MAKE_REFLECT_STRUCT(InTextDocumentCodeLens, id, params);
+REGISTER_IN_MESSAGE(InTextDocumentCodeLens);
 
-struct Out_TextDocumentCodeLens
-    : public LsOutMessage<Out_TextDocumentCodeLens> {
+struct OutTextDocumentCodeLens : public LsOutMessage<OutTextDocumentCodeLens> {
     LsRequestId id;
     std::vector<LsCodeLens<LsCodeLensUserData, LsCodeLensCommandArguments>>
         result;
 };
-MAKE_REFLECT_STRUCT(Out_TextDocumentCodeLens, jsonrpc, id, result);
+MAKE_REFLECT_STRUCT(OutTextDocumentCodeLens, jsonrpc, id, result);
 
 struct CommonCodeLensParams {
     std::vector<TCodeLens>* result;
@@ -77,21 +76,21 @@ void AddCodeLens(const char* singular, const char* plural,
         common->result->push_back(code_lens);
 }
 
-struct Handler_TextDocumentCodeLens
-    : BaseMessageHandler<In_TextDocumentCodeLens> {
-    MethodType GetMethodType() const override { return kMethodType; }
-    void Run(In_TextDocumentCodeLens* request) override {
-        Out_TextDocumentCodeLens out;
+struct HandlerTextDocumentCodeLens
+    : BaseMessageHandler<InTextDocumentCodeLens> {
+    MethodType GetMethodType() const override { return k_method_type; }
+    void Run(InTextDocumentCodeLens* request) override {
+        OutTextDocumentCodeLens out;
         out.id = request->id;
 
-        LsDocumentUri file_as_uri = request->params.textDocument.uri;
+        LsDocumentUri file_as_uri = request->params.text_document.uri;
         AbsolutePath path = file_as_uri.GetAbsolutePath();
 
         clang_complete->NotifyView(path);
 
         QueryFile* file;
         if (!FindFileOrFail(db, project, request->id,
-                            request->params.textDocument.uri.GetAbsolutePath(),
+                            request->params.text_document.uri.GetAbsolutePath(),
                             &file)) {
             return;
         }
@@ -240,8 +239,8 @@ struct Handler_TextDocumentCodeLens
             };
         }
 
-        QueueManager::WriteStdout(kMethodType, out);
+        QueueManager::WriteStdout(k_method_type, out);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentCodeLens);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentCodeLens);
 }  // namespace

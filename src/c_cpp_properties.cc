@@ -1,13 +1,12 @@
 #include "c_cpp_properties.h"
 
+#include <doctest/doctest.h>
+#include <rapidjson/document.h>
+#include <string_view.h>
+
 #include <fstream>
 #include <iostream>
 #include <regex>
-
-#include <string_view.h>
-
-#include <doctest/doctest.h>
-#include <rapidjson/document.h>
 
 #ifdef _WIN32
 #define CURRENT_PLATFORM "Win32"
@@ -22,91 +21,88 @@ namespace {
 std::string_view kCurrentPlatform = CURRENT_PLATFORM;
 
 optional<CCppProperties> LoadCCppPropertiesFromStr(
-    const std::string_view filecontent,
-    const std::string& project_dir) {
-  CCppProperties res;
-  rapidjson::Document document;
-  document.Parse(filecontent.data());
-  if (!document.IsObject())
-    return {};
-  auto conf_it = document.FindMember("configurations");
-  if (conf_it == document.MemberEnd())
-    return {};
-  if (!conf_it->value.IsArray())
-    return {};
-  for (auto& conf : conf_it->value.GetArray()) {
-    if (!conf.HasMember("name") || conf["name"].GetString() != kCurrentPlatform)
-      continue;
+    const std::string_view filecontent, const std::string& project_dir) {
+    CCppProperties res;
+    rapidjson::Document document;
+    document.Parse(filecontent.data());
+    if (!document.IsObject()) return {};
+    auto conf_it = document.FindMember("configurations");
+    if (conf_it == document.MemberEnd()) return {};
+    if (!conf_it->value.IsArray()) return {};
+    for (auto& conf : conf_it->value.GetArray()) {
+        if (!conf.HasMember("name") ||
+            conf["name"].GetString() != kCurrentPlatform)
+            continue;
 
-    // If "compilerPath" entry is specified, it is used instead of clang.
-    if (conf.HasMember("compilerPath")) {
-      if (conf["compilerPath"].IsArray()) {
-        // If "compilerPath" entry is an array (non-standard), then it specifies
-        // the compiler in the first entry, and its arguments in the following entries.
-        const auto& compilerPath = conf["compilerPath"].GetArray();
-        res.args.reserve(res.args.size() + compilerPath.Size());
-        for (const auto& element : compilerPath) {
-          res.args.emplace_back(element.GetString());
+        // If "compilerPath" entry is specified, it is used instead of clang.
+        if (conf.HasMember("compilerPath")) {
+            if (conf["compilerPath"].IsArray()) {
+                // If "compilerPath" entry is an array (non-standard), then it
+                // specifies the compiler in the first entry, and its arguments
+                // in the following entries.
+                const auto& compilerPath = conf["compilerPath"].GetArray();
+                res.args.reserve(res.args.size() + compilerPath.Size());
+                for (const auto& element : compilerPath) {
+                    res.args.emplace_back(element.GetString());
+                }
+            } else {
+                // "compilerPath" entry is conventionally a string.
+                res.args.emplace_back(conf["compilerPath"].GetString());
+            }
+        } else {
+            // No compiler specified. Default to clang.
+            res.args.emplace_back("%clang");
         }
-      } else {
-        // "compilerPath" entry is conventionally a string.
-        res.args.emplace_back(conf["compilerPath"].GetString());
-      }
-    } else {
-      // No compiler specified. Default to clang.
-      res.args.emplace_back("%clang");
+
+        auto def_it = conf.FindMember("defines");
+        if (def_it != conf.MemberEnd() && def_it->value.IsArray()) {
+            for (auto& def : def_it->value.GetArray()) {
+                res.args.push_back(std::string("-D") + def.GetString());
+            }
+        }
+
+        auto inc_it = conf.FindMember("includePath");
+        if (inc_it != conf.MemberEnd() && inc_it->value.IsArray()) {
+            for (auto& inc : inc_it->value.GetArray()) {
+                // TODO maybe handle "path/**" ?
+                auto incpath = std::regex_replace(
+                    std::string(inc.GetString()),
+                    std::regex("\\$\\{workspaceFolder\\}"), project_dir);
+                res.args.push_back("-I" + incpath);
+            }
+        }
+
+        if (res.c_standard.empty() && conf.HasMember("cStandard")) {
+            res.c_standard = conf["cStandard"].GetString();
+            res.args.push_back("%c -std=" + res.c_standard);
+        }
+        if (res.cpp_standard.empty() && conf.HasMember("cppStandard")) {
+            res.cpp_standard = conf["cppStandard"].GetString();
+            res.args.push_back("%cpp -std=" + res.cpp_standard);
+        }
     }
 
-    auto def_it = conf.FindMember("defines");
-    if (def_it != conf.MemberEnd() && def_it->value.IsArray()) {
-      for (auto& def : def_it->value.GetArray()) {
-        res.args.push_back(std::string("-D") + def.GetString());
-      }
+    if (res.args.empty()) {
+        // No usable configurations are specified. Default to clang.
+        res.args.emplace_back("%clang");
     }
-
-    auto inc_it = conf.FindMember("includePath");
-    if (inc_it != conf.MemberEnd() && inc_it->value.IsArray()) {
-      for (auto& inc : inc_it->value.GetArray()) {
-        // TODO maybe handle "path/**" ?
-        auto incpath = std::regex_replace(
-            std::string(inc.GetString()),
-            std::regex("\\$\\{workspaceFolder\\}"), project_dir);
-        res.args.push_back("-I" + incpath);
-      }
-    }
-
-    if (res.cStandard.empty() && conf.HasMember("cStandard")) {
-      res.cStandard = conf["cStandard"].GetString();
-      res.args.push_back("%c -std=" + res.cStandard);
-    }
-    if (res.cppStandard.empty() && conf.HasMember("cppStandard")) {
-      res.cppStandard = conf["cppStandard"].GetString();
-      res.args.push_back("%cpp -std=" + res.cppStandard);
-    }
-  }
-
-  if (res.args.empty()) {
-    // No usable configurations are specified. Default to clang.
-    res.args.emplace_back("%clang");
-  }
-  return res;
+    return res;
 }
 
 }  // namespace
 
 optional<CCppProperties> LoadCCppProperties(const std::string& json_full_path,
                                             const std::string& project_dir) {
-  std::ifstream fc_stream(json_full_path);
-  if (!fc_stream)
-    return {};
-  std::string filecontent{std::istreambuf_iterator<char>(fc_stream),
-                          std::istreambuf_iterator<char>()};
-  return LoadCCppPropertiesFromStr(filecontent, project_dir);
+    std::ifstream fc_stream(json_full_path);
+    if (!fc_stream) return {};
+    std::string filecontent{std::istreambuf_iterator<char>(fc_stream),
+                            std::istreambuf_iterator<char>()};
+    return LoadCCppPropertiesFromStr(filecontent, project_dir);
 }
 
 TEST_SUITE("CCppProperties") {
-  TEST_CASE("basic") {
-    const char* testjson = R"(
+    TEST_CASE("basic") {
+        const char* testjson = R"(
       {
         "configurations": [
           {
@@ -134,28 +130,29 @@ TEST_SUITE("CCppProperties") {
         ],
         "version": 4
       })";
-    auto res = LoadCCppPropertiesFromStr(testjson, "/proj/");
-    REQUIRE(res.has_value());
-    CCppProperties& val = res.value();
-    REQUIRE_EQ(val.cStandard, "c11");
-    REQUIRE_EQ(val.cppStandard, "c++17");
-    std::vector<std::string> args{
-        "%clang", "-DFOO",        "-DBAR=1",     "-I/proj/",
-        "-Ifoo",  "-I/proj//bar", "%c -std=c11", "%cpp -std=c++17"};
-    bool args_equal = val.args == args;
-    if (!args_equal) {
-      if (val.args.size() != args.size()) {
-        std::cout << "\tval.args size " << val.args.size() << " , args size "
-                  << args.size() << std::endl;
-      }
-      for (size_t i = 0; i < std::min(val.args.size(), args.size()); ++i) {
-        auto& a1 = val.args[i];
-        auto& a2 = args[i];
-        if (a1 != a2) {
-          std::cout << "\tArg " << a1 << " != " << a2 << std::endl;
+        auto res = LoadCCppPropertiesFromStr(testjson, "/proj/");
+        REQUIRE(res.has_value());
+        CCppProperties& val = res.value();
+        REQUIRE_EQ(val.c_standard, "c11");
+        REQUIRE_EQ(val.cpp_standard, "c++17");
+        std::vector<std::string> args{
+            "%clang", "-DFOO",        "-DBAR=1",     "-I/proj/",
+            "-Ifoo",  "-I/proj//bar", "%c -std=c11", "%cpp -std=c++17"};
+        bool args_equal = val.args == args;
+        if (!args_equal) {
+            if (val.args.size() != args.size()) {
+                std::cout << "\tval.args size " << val.args.size()
+                          << " , args size " << args.size() << std::endl;
+            }
+            for (size_t i = 0; i < std::min(val.args.size(), args.size());
+                 ++i) {
+                auto& a1 = val.args[i];
+                auto& a2 = args[i];
+                if (a1 != a2) {
+                    std::cout << "\tArg " << a1 << " != " << a2 << std::endl;
+                }
+            }
         }
-      }
+        REQUIRE(args_equal);
     }
-    REQUIRE(args_equal);
-  }
 }

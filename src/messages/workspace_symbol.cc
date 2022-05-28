@@ -12,7 +12,7 @@
 #include "queue_manager.h"
 
 namespace {
-MethodType kMethodType = "workspace/symbol";
+MethodType k_method_type = "workspace/symbol";
 
 // Lookup |symbol| in |db| and insert the value into |result|.
 bool InsertSymbolIntoResult(QueryDatabase* db, WorkingFiles* working_files,
@@ -39,29 +39,29 @@ bool InsertSymbolIntoResult(QueryDatabase* db, WorkingFiles* working_files,
     return true;
 }
 
-struct In_WorkspaceSymbol : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InWorkspaceSymbol : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
     struct Params {
         std::string query;
     };
     Params params;
 };
-MAKE_REFLECT_STRUCT(In_WorkspaceSymbol::Params, query);
-MAKE_REFLECT_STRUCT(In_WorkspaceSymbol, id, params);
-REGISTER_IN_MESSAGE(In_WorkspaceSymbol);
+MAKE_REFLECT_STRUCT(InWorkspaceSymbol::Params, query);
+MAKE_REFLECT_STRUCT(InWorkspaceSymbol, id, params);
+REGISTER_IN_MESSAGE(InWorkspaceSymbol);
 
-struct Out_WorkspaceSymbol : public LsOutMessage<Out_WorkspaceSymbol> {
+struct OutWorkspaceSymbol : public LsOutMessage<OutWorkspaceSymbol> {
     LsRequestId id;
     std::vector<LsSymbolInformation> result;
 };
-MAKE_REFLECT_STRUCT(Out_WorkspaceSymbol, jsonrpc, id, result);
+MAKE_REFLECT_STRUCT(OutWorkspaceSymbol, jsonrpc, id, result);
 
 ///// Fuzzy matching
 
-struct Handler_WorkspaceSymbol : BaseMessageHandler<In_WorkspaceSymbol> {
-    MethodType GetMethodType() const override { return kMethodType; }
-    void Run(In_WorkspaceSymbol* request) override {
-        Out_WorkspaceSymbol out;
+struct HandlerWorkspaceSymbol : BaseMessageHandler<InWorkspaceSymbol> {
+    MethodType GetMethodType() const override { return k_method_type; }
+    void Run(InWorkspaceSymbol* request) override {
+        OutWorkspaceSymbol out;
         out.id = request->id;
 
         LOG_S(INFO) << "[querydb] Considering " << db->symbols.size()
@@ -126,7 +126,7 @@ struct Handler_WorkspaceSymbol : BaseMessageHandler<In_WorkspaceSymbol> {
         }
 
         if (g_config->workspaceSymbol.sort &&
-            query.size() <= FuzzyMatcher::kMaxPat) {
+            query.size() <= FuzzyMatcher::k_max_pat) {
             // Sort results with a fuzzy matching algorithm.
             int longest = 0;
             for (int i : result_indices)
@@ -144,7 +144,7 @@ struct Handler_WorkspaceSymbol : BaseMessageHandler<In_WorkspaceSymbol> {
             out.result.reserve(result_indices.size());
             // Discard awful candidates.
             for (int i = 0; i < int(result_indices.size()) &&
-                            permutation[i].first > FuzzyMatcher::kMinScore;
+                            permutation[i].first > FuzzyMatcher::k_min_score;
                  i++)
                 out.result.push_back(
                     std::move(unsorted_results[permutation[i].second]));
@@ -156,8 +156,8 @@ struct Handler_WorkspaceSymbol : BaseMessageHandler<In_WorkspaceSymbol> {
 
         LOG_S(INFO) << "[querydb] Found " << out.result.size()
                     << " results for query " << query;
-        QueueManager::WriteStdout(kMethodType, out);
+        QueueManager::WriteStdout(k_method_type, out);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_WorkspaceSymbol);
+REGISTER_MESSAGE_HANDLER(HandlerWorkspaceSymbol);
 }  // namespace

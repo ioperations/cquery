@@ -10,42 +10,42 @@
 #include "working_files.h"
 
 namespace {
-MethodType kMethodType = "textDocument/formatting";
+MethodType k_method_type = "textDocument/formatting";
 
-struct In_TextDocumentFormatting : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InTextDocumentFormatting : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
     struct Params {
-        LsTextDocumentIdentifier textDocument;
+        LsTextDocumentIdentifier text_document;
         LsFormattingOptions options;
     };
     Params params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentFormatting::Params, textDocument, options);
-MAKE_REFLECT_STRUCT(In_TextDocumentFormatting, id, params);
-REGISTER_IN_MESSAGE(In_TextDocumentFormatting);
+MAKE_REFLECT_STRUCT(InTextDocumentFormatting::Params, text_document, options);
+MAKE_REFLECT_STRUCT(InTextDocumentFormatting, id, params);
+REGISTER_IN_MESSAGE(InTextDocumentFormatting);
 
-struct Out_TextDocumentFormatting
-    : public LsOutMessage<Out_TextDocumentFormatting> {
+struct OutTextDocumentFormatting
+    : public LsOutMessage<OutTextDocumentFormatting> {
     LsRequestId id;
     std::vector<LsTextEdit> result;
 };
-MAKE_REFLECT_STRUCT(Out_TextDocumentFormatting, jsonrpc, id, result);
+MAKE_REFLECT_STRUCT(OutTextDocumentFormatting, jsonrpc, id, result);
 
-struct Handler_TextDocumentFormatting
-    : BaseMessageHandler<In_TextDocumentFormatting> {
-    MethodType GetMethodType() const override { return kMethodType; }
-    void Run(In_TextDocumentFormatting* request) override {
-        Out_TextDocumentFormatting response;
+struct HandlerTextDocumentFormatting
+    : BaseMessageHandler<InTextDocumentFormatting> {
+    MethodType GetMethodType() const override { return k_method_type; }
+    void Run(InTextDocumentFormatting* request) override {
+        OutTextDocumentFormatting response;
         response.id = request->id;
 
         WorkingFile* working_file = working_files->GetFileByFilename(
-            request->params.textDocument.uri.GetAbsolutePath());
+            request->params.text_document.uri.GetAbsolutePath());
         response.result =
             RunClangFormat(working_file->filename, working_file->buffer_content,
                            nullopt /*start_offset*/, nullopt /*end_offset*/);
 
-        QueueManager::WriteStdout(kMethodType, response);
+        QueueManager::WriteStdout(k_method_type, response);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentFormatting);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentFormatting);
 }  // namespace

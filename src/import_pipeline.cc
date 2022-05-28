@@ -303,7 +303,7 @@ void ParseFile(DiagnosticsEngine* diag_engine, WorkingFiles* working_files,
 
     if (!indexes) {
         if (g_config->index.enabled && request.id.has_value()) {
-            Out_Error out;
+            OutError out;
             out.id = request.id;
             out.error.code = lsErrorCodes::InternalError;
             out.error.message = "Failed to index " + path_to_index.path;
@@ -480,13 +480,13 @@ bool IndexMergeIndexUpdates() {
 ImportPipelineStatus::ImportPipelineStatus()
     : num_active_threads(0), next_progress_output(0) {}
 
-void Indexer_Main(DiagnosticsEngine* diag_engine,
-                  FileConsumerSharedState* file_consumer_shared,
-                  TimestampManager* timestamp_manager,
-                  ImportManager* import_manager, ImportPipelineStatus* status,
-                  Project* project, WorkingFiles* working_files,
-                  CodeCompleteCache* global_code_complete_cache,
-                  CodeCompleteCache* non_global_code_complete_cache) {
+void IndexerMain(DiagnosticsEngine* diag_engine,
+                 FileConsumerSharedState* file_consumer_shared,
+                 TimestampManager* timestamp_manager,
+                 ImportManager* import_manager, ImportPipelineStatus* status,
+                 Project* project, WorkingFiles* working_files,
+                 CodeCompleteCache* global_code_complete_cache,
+                 CodeCompleteCache* non_global_code_complete_cache) {
     RealModificationTimestampFetcher modification_timestamp_fetcher;
     auto* queue = QueueManager::Instance();
     // Build one index per-indexer, as building the index acquires a global
@@ -604,10 +604,10 @@ void QueryDbOnIndexed(QueueManager* queue, QueryDatabase* db,
 
 }  // namespace
 
-bool QueryDb_ImportMain(QueryDatabase* db, ImportManager* import_manager,
-                        ImportPipelineStatus* status,
-                        SemanticHighlightSymbolCache* semantic_cache,
-                        WorkingFiles* working_files) {
+bool QueryDbImportMain(QueryDatabase* db, ImportManager* import_manager,
+                       ImportPipelineStatus* status,
+                       SemanticHighlightSymbolCache* semantic_cache,
+                       WorkingFiles* working_files) {
     auto* queue = QueueManager::Instance();
 
     ActiveThread active_thread(status);

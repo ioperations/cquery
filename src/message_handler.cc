@@ -76,7 +76,7 @@ bool FindFileOrFail(QueryDatabase* db, const Project* project,
         LOG_S(INFO) << "Unable to find file \"" << absolute_path << "\"";
 
     if (id) {
-        Out_Error out;
+        OutError out;
         out.id = *id;
         if (indexing) {
             out.error.code = lsErrorCodes::ServerNotInitialized;

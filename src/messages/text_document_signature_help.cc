@@ -7,18 +7,18 @@
 #include "timer.h"
 
 namespace {
-MethodType kMethodType = "textDocument/signatureHelp";
+MethodType k_method_type = "textDocument/signatureHelp";
 
-struct In_TextDocumentSignatureHelp : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InTextDocumentSignatureHelp : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
     LsTextDocumentPositionParams params;
 };
-MAKE_REFLECT_STRUCT(In_TextDocumentSignatureHelp, id, params);
-REGISTER_IN_MESSAGE(In_TextDocumentSignatureHelp);
+MAKE_REFLECT_STRUCT(InTextDocumentSignatureHelp, id, params);
+REGISTER_IN_MESSAGE(InTextDocumentSignatureHelp);
 
 // Represents a parameter of a callable-signature. A parameter can
 // have a label and a doc-comment.
-struct lsParameterInformation {
+struct LsParameterInformation {
     // The label of this parameter. Will be shown in
     // the UI.
     std::string label;
@@ -27,12 +27,12 @@ struct lsParameterInformation {
     // in the UI but can be omitted.
     optional<std::string> documentation;
 };
-MAKE_REFLECT_STRUCT(lsParameterInformation, label, documentation);
+MAKE_REFLECT_STRUCT(LsParameterInformation, label, documentation);
 
 // Represents the signature of something callable. A signature
 // can have a label, like a function-name, a doc-comment, and
 // a set of parameters.
-struct lsSignatureInformation {
+struct LsSignatureInformation {
     // The label of this signature. Will be shown in
     // the UI.
     std::string label;
@@ -42,16 +42,16 @@ struct lsSignatureInformation {
     optional<std::string> documentation;
 
     // The parameters of this signature.
-    std::vector<lsParameterInformation> parameters;
+    std::vector<LsParameterInformation> parameters;
 };
-MAKE_REFLECT_STRUCT(lsSignatureInformation, label, documentation, parameters);
+MAKE_REFLECT_STRUCT(LsSignatureInformation, label, documentation, parameters);
 
 // Signature help represents the signature of something
 // callable. There can be multiple signature but only one
 // active and only one active parameter.
-struct lsSignatureHelp {
+struct LsSignatureHelp {
     // One or more signatures.
-    std::vector<lsSignatureInformation> signatures;
+    std::vector<LsSignatureInformation> signatures;
 
     // The active signature. If omitted or the value lies outside the
     // range of `signatures` the value defaults to zero or is ignored if
@@ -60,7 +60,7 @@ struct lsSignatureHelp {
     // rely on a default value.
     // In future version of the protocol this property might become
     // mandantory to better express this.
-    optional<int> activeSignature;
+    optional<int> active_signature;
 
     // The active parameter of the active signature. If omitted or the value
     // lies outside the range of `signatures[activeSignature].parameters`
@@ -69,24 +69,24 @@ struct lsSignatureHelp {
     // In future version of the protocol this property might become
     // mandantory to better express the active parameter if the
     // active signature does have any.
-    optional<int> activeParameter;
+    optional<int> active_parameter;
 };
-MAKE_REFLECT_STRUCT(lsSignatureHelp, signatures, activeSignature,
-                    activeParameter);
+MAKE_REFLECT_STRUCT(LsSignatureHelp, signatures, active_signature,
+                    active_parameter);
 
-struct Out_TextDocumentSignatureHelp
-    : public LsOutMessage<Out_TextDocumentSignatureHelp> {
+struct OutTextDocumentSignatureHelp
+    : public LsOutMessage<OutTextDocumentSignatureHelp> {
     LsRequestId id;
-    lsSignatureHelp result;
+    LsSignatureHelp result;
 };
-MAKE_REFLECT_STRUCT(Out_TextDocumentSignatureHelp, jsonrpc, id, result);
+MAKE_REFLECT_STRUCT(OutTextDocumentSignatureHelp, jsonrpc, id, result);
 
-struct Handler_TextDocumentSignatureHelp : MessageHandler {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct HandlerTextDocumentSignatureHelp : MessageHandler {
+    MethodType GetMethodType() const override { return k_method_type; }
 
     void Run(std::unique_ptr<InMessage> message) override {
-        auto request =
-            static_cast<In_TextDocumentSignatureHelp*>(message.get());
+        auto* request =
+            static_cast<InTextDocumentSignatureHelp*>(message.get());
         LsTextDocumentPositionParams& params = request->params;
         WorkingFile* file = working_files->GetFileByFilename(
             params.text_document.uri.GetAbsolutePath());
@@ -100,23 +100,23 @@ struct Handler_TextDocumentSignatureHelp : MessageHandler {
         }
         if (search.empty()) return;
 
-        In_TextDocumentSignatureHelp* msg =
-            static_cast<In_TextDocumentSignatureHelp*>(message.release());
+        InTextDocumentSignatureHelp* msg =
+            static_cast<InTextDocumentSignatureHelp*>(message.release());
         ClangCompleteManager::OnComplete callback =
             [this, msg, search, active_param](
                 const LsRequestId& id,
                 const std::vector<lsCompletionItem>& results,
                 bool is_cached_result) {
-                Out_TextDocumentSignatureHelp out;
+                OutTextDocumentSignatureHelp out;
                 out.id = id;
 
                 for (auto& result : results) {
                     if (result.label != search) continue;
 
-                    lsSignatureInformation signature;
+                    LsSignatureInformation signature;
                     signature.label = result.detail;
                     for (auto& parameter : result.parameters_) {
-                        lsParameterInformation ls_param;
+                        LsParameterInformation ls_param;
                         ls_param.label = parameter;
                         signature.parameters.push_back(ls_param);
                     }
@@ -125,23 +125,23 @@ struct Handler_TextDocumentSignatureHelp : MessageHandler {
 
                 // Prefer the signature with least parameter count but still
                 // larger than active_param.
-                out.result.activeSignature = 0;
+                out.result.active_signature = 0;
                 if (out.result.signatures.size()) {
                     size_t num_parameters = SIZE_MAX;
                     for (size_t i = 0; i < out.result.signatures.size(); ++i) {
                         size_t t = out.result.signatures[i].parameters.size();
                         if (active_param < t && t < num_parameters) {
-                            out.result.activeSignature = int(i);
+                            out.result.active_signature = int(i);
                             num_parameters = t;
                         }
                     }
                 }
 
                 // Set signature to what we parsed from the working file.
-                out.result.activeParameter = active_param;
+                out.result.active_parameter = active_param;
 
                 Timer timer;
-                QueueManager::WriteStdout(kMethodType, out);
+                QueueManager::WriteStdout(k_method_type, out);
 
                 if (!is_cached_result) {
                     signature_cache->WithLock([&]() {
@@ -167,5 +167,5 @@ struct Handler_TextDocumentSignatureHelp : MessageHandler {
         }
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_TextDocumentSignatureHelp);
+REGISTER_MESSAGE_HANDLER(HandlerTextDocumentSignatureHelp);
 }  // namespace

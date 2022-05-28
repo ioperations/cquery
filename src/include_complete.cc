@@ -92,7 +92,7 @@ lsCompletionItem BuildCompletionItem(const std::string& path,
 }  // namespace
 
 IncludeComplete::IncludeComplete(Project* project)
-    : is_scanning(false), project_(project) {}
+    : is_scanning(false), m_project(project) {}
 
 void IncludeComplete::Rescan() {
     if (is_scanning) return;
@@ -101,9 +101,9 @@ void IncludeComplete::Rescan() {
     absolute_path_to_completion_item.clear();
     inserted_paths.clear();
 
-    if (!match_ && (!g_config->completion.includeWhitelist.empty() ||
-                    !g_config->completion.includeBlacklist.empty()))
-        match_ =
+    if (!m_match && (!g_config->completion.includeWhitelist.empty() ||
+                     !g_config->completion.includeBlacklist.empty()))
+        m_match =
             std::make_unique<GroupMatch>(g_config->completion.includeWhitelist,
                                          g_config->completion.includeBlacklist);
 
@@ -114,9 +114,9 @@ void IncludeComplete::Rescan() {
         InsertStlIncludes();
         InsertIncludesFromDirectory(g_config->projectRoot,
                                     false /*use_angle_brackets*/);
-        for (const Directory& dir : project_->quote_include_directories)
+        for (const Directory& dir : m_project->quote_include_directories)
             InsertIncludesFromDirectory(dir.path, false /*use_angle_brackets*/);
-        for (const Directory& dir : project_->angle_include_directories)
+        for (const Directory& dir : m_project->angle_include_directories)
             InsertIncludesFromDirectory(dir.path, true /*use_angle_brackets*/);
 
         timer.ResetAndPrint("[perf] Scanning for includes");
@@ -149,11 +149,11 @@ void IncludeComplete::AddFile(const std::string& absolute_path) {
     if (!EndsWithAny(absolute_path,
                      g_config->completion.includeSuffixWhitelist))
         return;
-    if (match_ && !match_->IsMatch(absolute_path)) return;
+    if (m_match && !m_match->IsMatch(absolute_path)) return;
 
     std::string trimmed_path = absolute_path;
     bool use_angle_brackets =
-        TrimPath(project_, g_config->projectRoot, &trimmed_path);
+        TrimPath(m_project, g_config->projectRoot, &trimmed_path);
     lsCompletionItem item =
         BuildCompletionItem(trimmed_path, use_angle_brackets, false /*is_stl*/);
 
@@ -169,7 +169,7 @@ void IncludeComplete::InsertIncludesFromDirectory(std::string directory0,
     if (!directory) return;
 
     EnsureEndsInSlash(directory->path);
-    if (match_ && !match_->IsMatch(directory->path)) {
+    if (m_match && !m_match->IsMatch(directory->path)) {
         // Don't even enter the directory if it fails the patterns.
         return;
     }
@@ -180,7 +180,7 @@ void IncludeComplete::InsertIncludesFromDirectory(std::string directory0,
         [&](const std::string& path) {
             if (!EndsWithAny(path, g_config->completion.includeSuffixWhitelist))
                 return;
-            if (match_ && !match_->IsMatch(directory->path + path)) return;
+            if (m_match && !m_match->IsMatch(directory->path + path)) return;
 
             CompletionCandidate candidate;
             candidate.absolute_path = directory->path + path;
