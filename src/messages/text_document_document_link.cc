@@ -32,7 +32,7 @@ MAKE_REFLECT_STRUCT(lsDocumentLink, range, target);
 
 struct Out_TextDocumentDocumentLink
     : public LsOutMessage<Out_TextDocumentDocumentLink> {
-    lsRequestId id;
+    LsRequestId id;
     std::vector<lsDocumentLink> result;
 };
 MAKE_REFLECT_STRUCT(Out_TextDocumentDocumentLink, jsonrpc, id, result);

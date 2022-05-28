@@ -51,7 +51,7 @@ MAKE_REFLECT_STRUCT(In_WorkspaceSymbol, id, params);
 REGISTER_IN_MESSAGE(In_WorkspaceSymbol);
 
 struct Out_WorkspaceSymbol : public LsOutMessage<Out_WorkspaceSymbol> {
-    lsRequestId id;
+    LsRequestId id;
     std::vector<LsSymbolInformation> result;
 };
 MAKE_REFLECT_STRUCT(Out_WorkspaceSymbol, jsonrpc, id, result);

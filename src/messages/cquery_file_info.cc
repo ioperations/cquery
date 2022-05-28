@@ -18,7 +18,7 @@ MAKE_REFLECT_STRUCT(In_CqueryFileInfo, id, params);
 REGISTER_IN_MESSAGE(In_CqueryFileInfo);
 
 struct Out_CqueryFileInfo : public LsOutMessage<Out_CqueryFileInfo> {
-    lsRequestId id;
+    LsRequestId id;
     QueryFile::Def result;
 };
 MAKE_REFLECT_STRUCT(Out_CqueryFileInfo, jsonrpc, id, result);

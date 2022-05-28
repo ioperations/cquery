@@ -15,7 +15,7 @@ REGISTER_IN_MESSAGE(In_TextDocumentDocumentHighlight);
 
 struct Out_TextDocumentDocumentHighlight
     : public LsOutMessage<Out_TextDocumentDocumentHighlight> {
-    lsRequestId id;
+    LsRequestId id;
     std::vector<LsDocumentHighlight> result;
 };
 MAKE_REFLECT_STRUCT(Out_TextDocumentDocumentHighlight, jsonrpc, id, result);

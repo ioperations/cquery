@@ -21,13 +21,13 @@ struct Index_Request {
     bool is_interactive;
     optional<std::string> contents;
     std::shared_ptr<ICacheManager> cache_manager;
-    lsRequestId id;
+    LsRequestId id;
 
     Index_Request(const AbsolutePath& path,
                   const std::vector<std::string>& args, bool is_interactive,
                   const optional<std::string>& contents,
                   const std::shared_ptr<ICacheManager>& cache_manager,
-                  lsRequestId id = {});
+                  LsRequestId id = {});
 };
 
 struct Index_DoIdMap {

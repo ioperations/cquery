@@ -11,7 +11,7 @@ MAKE_REFLECT_STRUCT(InShutdown, id);
 REGISTER_IN_MESSAGE(InShutdown);
 
 struct OutShutdown : public LsOutMessage<OutShutdown> {
-    lsRequestId id;
+    LsRequestId id;
     JsonNull result;
 };
 MAKE_REFLECT_STRUCT(OutShutdown, jsonrpc, id, result);

@@ -59,7 +59,7 @@ struct OutCqueryCallHierarchy : public LsOutMessage<OutCqueryCallHierarchy> {
         std::vector<Entry> children;
     };
 
-    lsRequestId id;
+    LsRequestId id;
     optional<Entry> result;
 };
 MAKE_REFLECT_STRUCT(OutCqueryCallHierarchy::Entry, id, name, location,

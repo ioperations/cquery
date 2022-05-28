@@ -1,7 +1,5 @@
 #pragma once
 
-#include "file_types.h"
-
 #include <optional.h>
 #include <string_view.h>
 
@@ -9,17 +7,19 @@
 #include <string>
 #include <vector>
 
+#include "file_types.h"
+
 struct PlatformMutex {
-  virtual ~PlatformMutex();
+    virtual ~PlatformMutex();
 };
 struct PlatformScopedMutexLock {
-  virtual ~PlatformScopedMutexLock();
+    virtual ~PlatformScopedMutexLock();
 };
 struct PlatformSharedMemory {
-  virtual ~PlatformSharedMemory();
-  void* data;
-  size_t capacity;
-  std::string name;
+    virtual ~PlatformSharedMemory();
+    void* data;
+    size_t capacity;
+    std::string name;
 };
 
 void PlatformInit();

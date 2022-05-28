@@ -770,7 +770,7 @@ IndexFunc* IndexFile::Resolve(IndexId::Func id) { return &funcs[id.id]; }
 IndexVar* IndexFile::Resolve(IndexId::Var id) { return &vars[id.id]; }
 
 std::string IndexFile::ToString() {
-    return Serialize(SerializeFormat::Json, *this);
+    return Serialize(serialize_format::Json, *this);
 }
 
 IndexType::IndexType(IndexId::Type id, Usr usr) : usr(usr), id(id) {}
@@ -2413,7 +2413,7 @@ std::string GetClangVersion() {
 // |Use| also uses this though it has an extra field |file|,
 // which is not used by Index* so it does not need to be serialized.
 void Reflect(Reader& visitor, Reference& value) {
-    if (visitor.Format() == SerializeFormat::Json) {
+    if (visitor.Format() == serialize_format::Json) {
         std::string t = visitor.GetString();
         char* s = const_cast<char*>(t.c_str());
         value.range = Range(s);
@@ -2429,7 +2429,7 @@ void Reflect(Reader& visitor, Reference& value) {
     }
 }
 void Reflect(Writer& visitor, Reference& value) {
-    if (visitor.Format() == SerializeFormat::Json) {
+    if (visitor.Format() == serialize_format::Json) {
         std::string s = value.range.ToString();
         // RawId(-1) -> "-1"
         s += '|' + std::to_string(

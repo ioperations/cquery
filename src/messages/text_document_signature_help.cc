@@ -76,7 +76,7 @@ MAKE_REFLECT_STRUCT(lsSignatureHelp, signatures, activeSignature,
 
 struct Out_TextDocumentSignatureHelp
     : public LsOutMessage<Out_TextDocumentSignatureHelp> {
-    lsRequestId id;
+    LsRequestId id;
     lsSignatureHelp result;
 };
 MAKE_REFLECT_STRUCT(Out_TextDocumentSignatureHelp, jsonrpc, id, result);
@@ -104,7 +104,7 @@ struct Handler_TextDocumentSignatureHelp : MessageHandler {
             static_cast<In_TextDocumentSignatureHelp*>(message.release());
         ClangCompleteManager::OnComplete callback =
             [this, msg, search, active_param](
-                const lsRequestId& id,
+                const LsRequestId& id,
                 const std::vector<lsCompletionItem>& results,
                 bool is_cached_result) {
                 Out_TextDocumentSignatureHelp out;

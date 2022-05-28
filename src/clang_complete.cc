@@ -691,7 +691,7 @@ ClangCompleteManager::PreloadRequest::PreloadRequest(const AbsolutePath& path)
     : request_time(std::chrono::high_resolution_clock::now()), path(path) {}
 
 ClangCompleteManager::CompletionRequest::CompletionRequest(
-    const lsRequestId& id, const AbsolutePath& path, const LsPosition& position,
+    const LsRequestId& id, const AbsolutePath& path, const LsPosition& position,
     const OnComplete& on_complete)
     : id(id), path(path), position(position), on_complete(on_complete) {}
 
@@ -719,7 +719,7 @@ ClangCompleteManager::ClangCompleteManager(Project* project,
 ClangCompleteManager::~ClangCompleteManager() {}
 
 void ClangCompleteManager::CodeComplete(
-    const lsRequestId& id,
+    const LsRequestId& id,
     const LsTextDocumentPositionParams& completion_location,
     const OnComplete& on_complete) {
     completion_request_.Enqueue(

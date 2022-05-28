@@ -51,7 +51,7 @@ MessageHandler::MessageHandler() {
 std::vector<MessageHandler*>* MessageHandler::message_handlers = nullptr;
 
 bool FindFileOrFail(QueryDatabase* db, const Project* project,
-                    optional<lsRequestId> id, const AbsolutePath& absolute_path,
+                    optional<LsRequestId> id, const AbsolutePath& absolute_path,
                     QueryFile** out_query_file, QueryId::File* out_file_id) {
     *out_query_file = nullptr;
 
@@ -120,7 +120,7 @@ void EmitSemanticHighlighting(QueryDatabase* db,
     if (!g_config->highlight.enabled) return;
 
     assert(file->def);
-    if (!semantic_cache->match_->IsMatch(file->def->path)) return;
+    if (!semantic_cache->m_match->IsMatch(file->def->path)) return;
     auto semantic_cache_for_file =
         semantic_cache->GetCacheForFile(file->def->path);
 

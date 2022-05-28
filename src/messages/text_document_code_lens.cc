@@ -22,7 +22,7 @@ REGISTER_IN_MESSAGE(In_TextDocumentCodeLens);
 
 struct Out_TextDocumentCodeLens
     : public LsOutMessage<Out_TextDocumentCodeLens> {
-    lsRequestId id;
+    LsRequestId id;
     std::vector<LsCodeLens<LsCodeLensUserData, LsCodeLensCommandArguments>>
         result;
 };

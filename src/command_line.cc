@@ -215,7 +215,7 @@ void RunQueryDbThread(const std::string& bin_name) {
         [&](std::string path, std::vector<lsDiagnostic> diagnostics) {
             diag_engine.Publish(&working_files, path, diagnostics);
         },
-        [](lsRequestId id) {
+        [](LsRequestId id) {
             if (id.has_value()) {
                 Out_Error out;
                 out.id = id;
@@ -320,7 +320,7 @@ void LaunchStdinLoop(std::unordered_map<MethodType, Timer>* request_times) {
                 // The message may be partially deserialized.
                 // Emit an error ResponseMessage if |id| is available.
                 if (message) {
-                    lsRequestId id = message->GetRequestId();
+                    LsRequestId id = message->GetRequestId();
                     if (id.has_value()) {
                         Out_Error out;
                         out.id = id;

@@ -59,7 +59,7 @@ struct Out_TextDocumentHover : public LsOutMessage<Out_TextDocumentHover> {
         optional<LsRange> range;
     };
 
-    lsRequestId id;
+    LsRequestId id;
     optional<Result> result;
 };
 MAKE_REFLECT_STRUCT(Out_TextDocumentHover::Result, contents, range);

@@ -69,7 +69,7 @@ struct Out_Error : public LsOutMessage<Out_Error> {
         // optional<D> data;
     };
 
-    lsRequestId id;
+    LsRequestId id;
 
     // The error object in case a request fails.
     lsResponseError error;

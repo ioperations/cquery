@@ -33,7 +33,7 @@ struct Handler_WorkspaceDidChangeConfiguration
                            std::to_string(project->entries.size()) + " files)");
 
         time.Reset();
-        project->Index(QueueManager::Instance(), working_files, lsRequestId());
+        project->Index(QueueManager::Instance(), working_files, LsRequestId());
         time.ResetAndPrint(
             "[perf] Dispatched workspace/didChangeConfiguration index "
             "requests");

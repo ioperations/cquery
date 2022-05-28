@@ -26,7 +26,7 @@ REGISTER_IN_MESSAGE(In_TextDocumentRangeFormatting);
 
 struct Out_TextDocumentRangeFormatting
     : public LsOutMessage<Out_TextDocumentRangeFormatting> {
-    lsRequestId id;
+    LsRequestId id;
     std::vector<LsTextEdit> result;
 };
 MAKE_REFLECT_STRUCT(Out_TextDocumentRangeFormatting, jsonrpc, id, result);

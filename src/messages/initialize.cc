@@ -446,7 +446,7 @@ struct Out_InitializeResponse : public LsOutMessage<Out_InitializeResponse> {
     struct InitializeResult {
         lsServerCapabilities capabilities;
     };
-    lsRequestId id;
+    LsRequestId id;
     InitializeResult result;
 };
 MAKE_REFLECT_STRUCT(Out_InitializeResponse::InitializeResult, capabilities);

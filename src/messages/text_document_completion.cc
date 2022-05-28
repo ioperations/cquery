@@ -71,7 +71,7 @@ MAKE_REFLECT_STRUCT(lsTextDocumentCompleteResult, isIncomplete, items);
 
 struct Out_TextDocumentComplete
     : public LsOutMessage<Out_TextDocumentComplete> {
-    lsRequestId id;
+    LsRequestId id;
     lsTextDocumentCompleteResult result;
 };
 MAKE_REFLECT_STRUCT(Out_TextDocumentComplete, jsonrpc, id, result);
@@ -392,7 +392,7 @@ struct Handler_TextDocumentCompletion : MessageHandler {
             ClangCompleteManager::OnComplete callback =
                 [this, request, existing_completion, end_pos,
                  is_global_completion,
-                 has_open_paren](const lsRequestId& id,
+                 has_open_paren](const LsRequestId& id,
                                  std::vector<lsCompletionItem> results,
                                  bool is_cached_result) {
                     Out_TextDocumentComplete out;
@@ -447,7 +447,7 @@ struct Handler_TextDocumentCompletion : MessageHandler {
             });
             if (is_cache_match) {
                 ClangCompleteManager::OnComplete freshen_global =
-                    [this](const lsRequestId& id,
+                    [this](const LsRequestId& id,
                            std::vector<lsCompletionItem> results,
                            bool is_cached_result) {
                         assert(!is_cached_result);
@@ -470,7 +470,7 @@ struct Handler_TextDocumentCompletion : MessageHandler {
                 });
                 // Do not pass the request id, since we've already sent a
                 // response for the id.
-                clang_complete->CodeComplete(lsRequestId(), request->params,
+                clang_complete->CodeComplete(LsRequestId(), request->params,
                                              freshen_global);
             } else if (non_global_code_complete_cache->IsCacheValid(
                            request->params)) {

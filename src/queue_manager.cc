@@ -9,7 +9,7 @@
 Index_Request::Index_Request(
     const AbsolutePath& path, const std::vector<std::string>& args,
     bool is_interactive, const optional<std::string>& contents,
-    const std::shared_ptr<ICacheManager>& cache_manager, lsRequestId id)
+    const std::shared_ptr<ICacheManager>& cache_manager, LsRequestId id)
     : path(path),
       args(args),
       is_interactive(is_interactive),

@@ -47,9 +47,9 @@ struct ClangCompleteManager {
     using OnDiagnostic = std::function<void(
         std::string path, std::vector<lsDiagnostic> diagnostics)>;
     using OnComplete = std::function<void(
-        const lsRequestId& id, const std::vector<lsCompletionItem>& results,
+        const LsRequestId& id, const std::vector<lsCompletionItem>& results,
         bool is_cached_result)>;
-    using OnDropped = std::function<void(lsRequestId request_id)>;
+    using OnDropped = std::function<void(LsRequestId request_id)>;
 
     struct PreloadRequest {
         PreloadRequest(const AbsolutePath& path);
@@ -59,11 +59,11 @@ struct ClangCompleteManager {
         AbsolutePath path;
     };
     struct CompletionRequest {
-        CompletionRequest(const lsRequestId& id, const AbsolutePath& path,
+        CompletionRequest(const LsRequestId& id, const AbsolutePath& path,
                           const LsPosition& position,
                           const OnComplete& on_complete);
 
-        lsRequestId id;
+        LsRequestId id;
         AbsolutePath path;
         LsPosition position;
         OnComplete on_complete;
@@ -81,7 +81,7 @@ struct ClangCompleteManager {
     // Start a code completion at the given location. |on_complete| will run
     // when completion results are available. |on_complete| may run on any
     // thread.
-    void CodeComplete(const lsRequestId& request_id,
+    void CodeComplete(const LsRequestId& request_id,
                       const LsTextDocumentPositionParams& completion_location,
                       const OnComplete& on_complete);
     // Request a diagnostics update.

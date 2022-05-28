@@ -15,7 +15,7 @@ REGISTER_IN_MESSAGE(InWorkspaceExecuteCommand);
 
 struct OutWorkspaceExecuteCommand
     : public LsOutMessage<OutWorkspaceExecuteCommand> {
-    lsRequestId id;
+    LsRequestId id;
     std::vector<LsLocation> result;
 };
 MAKE_REFLECT_STRUCT(OutWorkspaceExecuteCommand, jsonrpc, id, result);

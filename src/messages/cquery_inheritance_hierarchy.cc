@@ -43,7 +43,7 @@ struct OutCqueryInheritanceHierarchy
         // Empty if the |levels| limit is reached.
         std::vector<Entry> children;
     };
-    lsRequestId id;
+    LsRequestId id;
     optional<Entry> result;
 };
 MAKE_REFLECT_STRUCT(OutCqueryInheritanceHierarchy::Entry, id, kind, name,

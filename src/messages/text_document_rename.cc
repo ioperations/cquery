@@ -71,7 +71,7 @@ MAKE_REFLECT_STRUCT(In_TextDocumentRename, id, params);
 REGISTER_IN_MESSAGE(In_TextDocumentRename);
 
 struct Out_TextDocumentRename : public LsOutMessage<Out_TextDocumentRename> {
-    lsRequestId id;
+    LsRequestId id;
     LsWorkspaceEdit result;
 };
 MAKE_REFLECT_STRUCT(Out_TextDocumentRename, jsonrpc, id, result);

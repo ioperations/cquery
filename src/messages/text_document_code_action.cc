@@ -276,7 +276,7 @@ struct OutTextDocumentCodeAction
     : public LsOutMessage<OutTextDocumentCodeAction> {
     using Command = LsCommand<CommandArgs>;
 
-    lsRequestId id;
+    LsRequestId id;
     std::vector<Command> result;
 };
 MAKE_REFLECT_STRUCT(OutTextDocumentCodeAction, jsonrpc, id, result);

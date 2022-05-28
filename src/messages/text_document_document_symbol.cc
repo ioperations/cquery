@@ -19,7 +19,7 @@ REGISTER_IN_MESSAGE(In_TextDocumentDocumentSymbol);
 
 struct Out_TextDocumentDocumentSymbol
     : public LsOutMessage<Out_TextDocumentDocumentSymbol> {
-    lsRequestId id;
+    LsRequestId id;
     std::vector<LsSymbolInformation> result;
 };
 MAKE_REFLECT_STRUCT(Out_TextDocumentDocumentSymbol, jsonrpc, id, result);

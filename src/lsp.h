@@ -391,7 +391,7 @@ void Reflect(TVisitor& visitor, OutShowLogMessage& value) {
 }
 
 struct OutLocationList : public LsOutMessage<OutLocationList> {
-    lsRequestId id;
+    LsRequestId id;
     std::vector<LsLocation> result;
 };
 MAKE_REFLECT_STRUCT(OutLocationList, jsonrpc, id, result);

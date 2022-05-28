@@ -26,7 +26,7 @@ REGISTER_IN_MESSAGE(In_TextDocumentFormatting);
 
 struct Out_TextDocumentFormatting
     : public LsOutMessage<Out_TextDocumentFormatting> {
-    lsRequestId id;
+    LsRequestId id;
     std::vector<LsTextEdit> result;
 };
 MAKE_REFLECT_STRUCT(Out_TextDocumentFormatting, jsonrpc, id, result);
