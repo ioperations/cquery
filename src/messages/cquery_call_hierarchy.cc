@@ -6,29 +6,29 @@
 
 namespace {
 
-MethodType kMethodType = "$cquery/callHierarchy";
+MethodType k_method_type = "$cquery/callHierarchy";
 
-enum class CallType : uint8_t {
+enum class call_type : uint8_t {
     Direct = 0,
     Base = 1,
     Derived = 2,
     All = 1 | 2
 };
-MAKE_REFLECT_TYPE_PROXY(CallType);
+MAKE_REFLECT_TYPE_PROXY(call_type);
 
-bool operator&(CallType lhs, CallType rhs) {
+bool operator&(call_type lhs, call_type rhs) {
     return uint8_t(lhs) & uint8_t(rhs);
 }
 
-struct In_CqueryCallHierarchy : public RequestInMessage {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct InCqueryCallHierarchy : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
 
     struct Params {
         // If id is specified, expand a node; otherwise textDocument+position
         // should be specified for building the root and |levels| of nodes
         // below.
-        lsTextDocumentIdentifier textDocument;
-        lsPosition position;
+        LsTextDocumentIdentifier text_document;
+        LsPosition position;
 
         Maybe<QueryId::Func> id;
 
@@ -37,24 +37,24 @@ struct In_CqueryCallHierarchy : public RequestInMessage {
         bool callee = false;
         // Base: include base functions; All: include both base and derived
         // functions.
-        CallType callType = CallType::All;
-        bool detailedName = false;
+        call_type call_type = call_type::All;
+        bool detailed_name = false;
         int levels = 1;
     };
     Params params;
 };
-MAKE_REFLECT_STRUCT(In_CqueryCallHierarchy::Params, textDocument, position, id,
-                    callee, callType, detailedName, levels);
-MAKE_REFLECT_STRUCT(In_CqueryCallHierarchy, id, params);
-REGISTER_IN_MESSAGE(In_CqueryCallHierarchy);
+MAKE_REFLECT_STRUCT(InCqueryCallHierarchy::Params, text_document, position, id,
+                    callee, call_type, detailed_name, levels);
+MAKE_REFLECT_STRUCT(InCqueryCallHierarchy, id, params);
+REGISTER_IN_MESSAGE(InCqueryCallHierarchy);
 
-struct Out_CqueryCallHierarchy : public lsOutMessage<Out_CqueryCallHierarchy> {
+struct OutCqueryCallHierarchy : public LsOutMessage<OutCqueryCallHierarchy> {
     struct Entry {
         QueryId::Func id;
         std::string_view name;
-        lsLocation location;
-        CallType callType = CallType::Direct;
-        int numChildren;
+        LsLocation location;
+        call_type call_type = call_type::Direct;
+        int num_children;
         // Empty if the |levels| limit is reached.
         std::vector<Entry> children;
     };
@@ -62,31 +62,31 @@ struct Out_CqueryCallHierarchy : public lsOutMessage<Out_CqueryCallHierarchy> {
     lsRequestId id;
     optional<Entry> result;
 };
-MAKE_REFLECT_STRUCT(Out_CqueryCallHierarchy::Entry, id, name, location,
-                    callType, numChildren, children);
-MAKE_REFLECT_STRUCT_OPTIONALS_MANDATORY(Out_CqueryCallHierarchy, jsonrpc, id,
+MAKE_REFLECT_STRUCT(OutCqueryCallHierarchy::Entry, id, name, location,
+                    call_type, num_children, children);
+MAKE_REFLECT_STRUCT_OPTIONALS_MANDATORY(OutCqueryCallHierarchy, jsonrpc, id,
                                         result);
 
-bool Expand(MessageHandler* m, Out_CqueryCallHierarchy::Entry* entry,
-            bool callee, CallType call_type, bool detailed_name, int levels) {
+bool Expand(MessageHandler* m, OutCqueryCallHierarchy::Entry* entry,
+            bool callee, call_type call_type, bool detailed_name, int levels) {
     const QueryFunc& func = m->db->GetFunc(entry->id);
     const QueryFunc::Def* def = func.AnyDef();
-    entry->numChildren = 0;
+    entry->num_children = 0;
     if (!def) return false;
-    auto handle = [&](QueryId::LexicalRef ref, CallType call_type) {
-        entry->numChildren++;
+    auto handle = [&](QueryId::LexicalRef ref, enum call_type call_type) {
+        entry->num_children++;
         if (levels > 0) {
-            Out_CqueryCallHierarchy::Entry entry1;
+            OutCqueryCallHierarchy::Entry entry1;
             entry1.id = QueryId::Func(ref.id);
             if (auto loc = GetLsLocation(m->db, m->working_files, ref))
                 entry1.location = *loc;
-            entry1.callType = call_type;
+            entry1.call_type = call_type;
             if (Expand(m, &entry1, callee, call_type, detailed_name,
                        levels - 1))
                 entry->children.push_back(std::move(entry1));
         }
     };
-    auto handle_uses = [&](const QueryFunc& func, CallType call_type) {
+    auto handle_uses = [&](const QueryFunc& func, enum call_type call_type) {
         if (callee) {
             if (const auto* def = func.AnyDef())
                 for (const QueryId::SymbolRef& ref : def->callees) {
@@ -108,10 +108,10 @@ bool Expand(MessageHandler* m, Out_CqueryCallHierarchy::Entry* entry,
         entry->name = def->detailed_name;
     else
         entry->name = def->ShortName();
-    handle_uses(func, CallType::Direct);
+    handle_uses(func, call_type::Direct);
 
     // Callers/callees of base functions.
-    if (call_type & CallType::Base) {
+    if (call_type & call_type::Base) {
         stack.push_back(&func);
         while (stack.size()) {
             const QueryFunc& func1 = *stack.back();
@@ -121,7 +121,7 @@ bool Expand(MessageHandler* m, Out_CqueryCallHierarchy::Entry* entry,
                     if (!seen.count(func2.usr)) {
                         seen.insert(func2.usr);
                         stack.push_back(&func2);
-                        handle_uses(func2, CallType::Base);
+                        handle_uses(func2, call_type::Base);
                     }
                 });
             }
@@ -129,7 +129,7 @@ bool Expand(MessageHandler* m, Out_CqueryCallHierarchy::Entry* entry,
     }
 
     // Callers/callees of derived functions.
-    if (call_type & CallType::Derived) {
+    if (call_type & call_type::Derived) {
         stack.push_back(&func);
         while (stack.size()) {
             const QueryFunc& func1 = *stack.back();
@@ -138,7 +138,7 @@ bool Expand(MessageHandler* m, Out_CqueryCallHierarchy::Entry* entry,
                 if (!seen.count(func2.usr)) {
                     seen.insert(func2.usr);
                     stack.push_back(&func2);
-                    handle_uses(func2, CallType::Derived);
+                    handle_uses(func2, call_type::Derived);
                 }
             });
         }
@@ -146,23 +146,22 @@ bool Expand(MessageHandler* m, Out_CqueryCallHierarchy::Entry* entry,
     return true;
 }
 
-struct Handler_CqueryCallHierarchy
-    : BaseMessageHandler<In_CqueryCallHierarchy> {
-    MethodType GetMethodType() const override { return kMethodType; }
+struct HandlerCqueryCallHierarchy : BaseMessageHandler<InCqueryCallHierarchy> {
+    MethodType GetMethodType() const override { return k_method_type; }
 
-    optional<Out_CqueryCallHierarchy::Entry> BuildInitial(QueryId::Func root_id,
-                                                          bool callee,
-                                                          CallType call_type,
-                                                          bool detailed_name,
-                                                          int levels) {
+    optional<OutCqueryCallHierarchy::Entry> BuildInitial(QueryId::Func root_id,
+                                                         bool callee,
+                                                         call_type call_type,
+                                                         bool detailed_name,
+                                                         int levels) {
         const auto* def = db->GetFunc(root_id).AnyDef();
         if (!def) return {};
 
-        Out_CqueryCallHierarchy::Entry entry;
+        OutCqueryCallHierarchy::Entry entry;
         entry.id = root_id;
-        entry.callType = CallType::Direct;
+        entry.call_type = call_type::Direct;
         if (def->spell) {
-            if (optional<lsLocation> loc =
+            if (optional<LsLocation> loc =
                     GetLsLocation(db, working_files, *def->spell))
                 entry.location = *loc;
         }
@@ -170,23 +169,23 @@ struct Handler_CqueryCallHierarchy
         return entry;
     }
 
-    void Run(In_CqueryCallHierarchy* request) override {
+    void Run(InCqueryCallHierarchy* request) override {
         const auto& params = request->params;
-        Out_CqueryCallHierarchy out;
+        OutCqueryCallHierarchy out;
         out.id = request->id;
 
         if (params.id) {
-            Out_CqueryCallHierarchy::Entry entry;
+            OutCqueryCallHierarchy::Entry entry;
             entry.id = *params.id;
-            entry.callType = CallType::Direct;
+            entry.call_type = call_type::Direct;
             if (entry.id.id < db->funcs.size())
-                Expand(this, &entry, params.callee, params.callType,
-                       params.detailedName, params.levels);
+                Expand(this, &entry, params.callee, params.call_type,
+                       params.detailed_name, params.levels);
             out.result = std::move(entry);
         } else {
             QueryFile* file;
             if (!FindFileOrFail(db, project, request->id,
-                                params.textDocument.uri.GetAbsolutePath(),
+                                params.text_document.uri.GetAbsolutePath(),
                                 &file))
                 return;
             WorkingFile* working_file =
@@ -195,16 +194,16 @@ struct Handler_CqueryCallHierarchy
                  FindSymbolsAtLocation(working_file, file, params.position)) {
                 if (sym.kind == SymbolKind::Func) {
                     out.result = BuildInitial(
-                        QueryId::Func(sym.id), params.callee, params.callType,
-                        params.detailedName, params.levels);
+                        QueryId::Func(sym.id), params.callee, params.call_type,
+                        params.detailed_name, params.levels);
                     break;
                 }
             }
         }
 
-        QueueManager::WriteStdout(kMethodType, out);
+        QueueManager::WriteStdout(k_method_type, out);
     }
 };
-REGISTER_MESSAGE_HANDLER(Handler_CqueryCallHierarchy);
+REGISTER_MESSAGE_HANDLER(HandlerCqueryCallHierarchy);
 
 }  // namespace

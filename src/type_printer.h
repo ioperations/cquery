@@ -2,6 +2,5 @@
 
 #include "indexer.h"
 
-std::string GetFunctionSignature(IndexFile* db,
-                                 NamespaceHelper* ns,
+std::string GetFunctionSignature(IndexFile* db, NamespaceHelper* ns,
                                  const CXIdxDeclInfo* decl);

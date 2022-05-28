@@ -1,9 +1,9 @@
 #if false
 #include "task.h"
 
-#include "utils.h"
-
 #include <doctest/doctest.h>
+
+#include "utils.h"
 
 TaskManager::TaskManager() {
   pending_tasks_[TaskThread::Indexer] = std::make_unique<TaskQueue>();

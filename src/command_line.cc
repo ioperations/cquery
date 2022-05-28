@@ -1,4 +1,18 @@
 // TODO: cleanup includes
+#include <doctest/doctest.h>
+#include <rapidjson/error/en.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <functional>
+#include <iostream>
+#include <iterator>
+#include <loguru.hpp>
+#include <string>
+#include <thread>
+#include <unordered_map>
+#include <vector>
+
 #include "cache_manager.h"
 #include "clang_complete.h"
 #include "code_complete_cache.h"
@@ -29,20 +43,6 @@
 #include "work_thread.h"
 #include "working_files.h"
 
-#include <doctest/doctest.h>
-#include <rapidjson/error/en.h>
-#include <loguru.hpp>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <functional>
-#include <iostream>
-#include <iterator>
-#include <string>
-#include <thread>
-#include <unordered_map>
-#include <vector>
-
 // TODO: provide a feature like 'https://github.com/goldsborough/clang-expand',
 // ie, a fully linear view of a function with inline function calls expanded.
 // We can probably use vscode decorators to achieve it.
@@ -55,18 +55,20 @@ Config* g_config;
 
 namespace {
 
-std::vector<std::string> kEmptyArgs;
+std::vector<std::string> k_empty_args;
 
 // This function returns true if e2e timing should be displayed for the given
 // MethodId.
 bool ShouldDisplayMethodTiming(MethodType type) {
-  return type != kMethodType_TextDocumentPublishDiagnostics &&
-         type != kMethodType_CqueryPublishInactiveRegions &&
-         type != kMethodType_CqueryQueryDbStatus && type != kMethodType_Unknown;
+    return type != kMethodType_TextDocumentPublishDiagnostics &&
+           type != kMethodType_CqueryPublishInactiveRegions &&
+           type != kMethodType_CqueryQueryDbStatus &&
+           type != kMethodType_Unknown;
 }
 
 void PrintHelp() {
-  std::cout << R"help(cquery is a low-latency C/C++/Objective-C language server.
+    std::cout
+        << R"help(cquery is a low-latency C/C++/Objective-C language server.
 
 Mode:
   --check <path>
@@ -108,33 +110,31 @@ See more on https://github.com/cquery-project/cquery/wiki
 
 // Writes the environment to stdcerr.
 void PrintEnvironment(const char** env) {
-  while (*env) {
-    std::cerr << *env << std::endl;
-    ++env;
-  }
+    while (*env) {
+        std::cerr << *env << std::endl;
+        ++env;
+    }
 }
 
-struct Out_CqueryQueryDbStatus : public lsOutMessage<Out_CqueryQueryDbStatus> {
-  struct Params {
-    bool isActive = false;
-  };
-  std::string method = kMethodType_CqueryQueryDbStatus;
-  Params params;
+struct OutCqueryQueryDbStatus : public LsOutMessage<OutCqueryQueryDbStatus> {
+    struct Params {
+        bool is_active = false;
+    };
+    std::string method = kMethodType_CqueryQueryDbStatus;
+    Params params;
 };
-MAKE_REFLECT_STRUCT(Out_CqueryQueryDbStatus::Params, isActive);
-MAKE_REFLECT_STRUCT(Out_CqueryQueryDbStatus, jsonrpc, method, params);
+MAKE_REFLECT_STRUCT(OutCqueryQueryDbStatus::Params, is_active);
+MAKE_REFLECT_STRUCT(OutCqueryQueryDbStatus, jsonrpc, method, params);
 
 void WriteQueryDbStatus(bool is_active) {
-  if (!g_config->emitQueryDbBlocked)
-    return;
+    if (!g_config->emitQueryDbBlocked) return;
 
-  static bool last_status = false;
-  if (is_active == last_status)
-    return;
-  last_status = is_active;
-  Out_CqueryQueryDbStatus out;
-  out.params.isActive = is_active;
-  QueueManager::WriteStdout(kMethodType_CqueryQueryDbStatus, out);
+    static bool last_status = false;
+    if (is_active == last_status) return;
+    last_status = is_active;
+    OutCqueryQueryDbStatus out;
+    out.params.is_active = is_active;
+    QueueManager::WriteStdout(kMethodType_CqueryQueryDbStatus, out);
 }
 
 }  // namespace
@@ -157,8 +157,7 @@ void WriteQueryDbStatus(bool is_active) {
 // QUERYDB MAIN ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-bool QueryDbMainLoop(QueryDatabase* db,
-                     Project* project,
+bool QueryDbMainLoop(QueryDatabase* db, Project* project,
                      FileConsumerSharedState* file_consumer_shared,
                      ImportManager* import_manager,
                      ImportPipelineStatus* status,
@@ -170,113 +169,115 @@ bool QueryDbMainLoop(QueryDatabase* db,
                      CodeCompleteCache* global_code_complete_cache,
                      CodeCompleteCache* non_global_code_complete_cache,
                      CodeCompleteCache* signature_cache) {
-  auto* queue = QueueManager::instance();
-  bool did_work = false;
+    auto* queue = QueueManager::Instance();
+    bool did_work = false;
 
-  optional<std::unique_ptr<InMessage>> message =
-      queue->for_querydb.TryDequeue(true /*priority*/);
-  while (message) {
-    did_work = true;
+    optional<std::unique_ptr<InMessage>> message =
+        queue->for_querydb.TryDequeue(true /*priority*/);
+    while (message) {
+        did_work = true;
 
-    bool found_handler = false;
-    for (MessageHandler* handler : *MessageHandler::message_handlers) {
-      if (handler->GetMethodType() == (*message)->GetMethodType()) {
-        handler->Run(std::move(*message));
-        found_handler = true;
-        break;
-      }
+        bool found_handler = false;
+        for (MessageHandler* handler : *MessageHandler::message_handlers) {
+            if (handler->GetMethodType() == (*message)->GetMethodType()) {
+                handler->Run(std::move(*message));
+                found_handler = true;
+                break;
+            }
+        }
+
+        if (!found_handler) {
+            LOG_S(FATAL) << "Exiting; no handler for "
+                         << (*message)->GetMethodType();
+            exit(1);
+        }
+
+        message = queue->for_querydb.TryDequeue(true /*priority*/);
     }
 
-    if (!found_handler) {
-      LOG_S(FATAL) << "Exiting; no handler for " << (*message)->GetMethodType();
-      exit(1);
+    if (QueryDb_ImportMain(db, import_manager, status, semantic_cache,
+                           working_files)) {
+        did_work = true;
     }
 
-    message = queue->for_querydb.TryDequeue(true /*priority*/);
-  }
-
-  if (QueryDb_ImportMain(db, import_manager, status, semantic_cache,
-                         working_files)) {
-    did_work = true;
-  }
-
-  return did_work;
+    return did_work;
 }
 
 void RunQueryDbThread(const std::string& bin_name) {
-  Project project;
-  SemanticHighlightSymbolCache semantic_cache;
-  WorkingFiles working_files;
-  FileConsumerSharedState file_consumer_shared;
-  DiagnosticsEngine diag_engine;
+    Project project;
+    SemanticHighlightSymbolCache semantic_cache;
+    WorkingFiles working_files;
+    FileConsumerSharedState file_consumer_shared;
+    DiagnosticsEngine diag_engine;
 
-  ClangCompleteManager clang_complete(
-      &project, &working_files,
-      [&](std::string path, std::vector<lsDiagnostic> diagnostics) {
-        diag_engine.Publish(&working_files, path, diagnostics);
-      },
-      [](lsRequestId id) {
-        if (id.has_value()) {
-          Out_Error out;
-          out.id = id;
-          out.error.code = lsErrorCodes::InternalError;
-          out.error.message =
-              "Dropping completion request; a newer request has come in that "
-              "will be serviced instead. This is not an error.";
-          QueueManager::WriteStdout(kMethodType_Unknown, out);
-        }
-      });
+    ClangCompleteManager clang_complete(
+        &project, &working_files,
+        [&](std::string path, std::vector<lsDiagnostic> diagnostics) {
+            diag_engine.Publish(&working_files, path, diagnostics);
+        },
+        [](lsRequestId id) {
+            if (id.has_value()) {
+                Out_Error out;
+                out.id = id;
+                out.error.code = lsErrorCodes::InternalError;
+                out.error.message =
+                    "Dropping completion request; a newer request has come in "
+                    "that "
+                    "will be serviced instead. This is not an error.";
+                QueueManager::WriteStdout(kMethodType_Unknown, out);
+            }
+        });
 
-  IncludeComplete include_complete(&project);
-  auto global_code_complete_cache = std::make_unique<CodeCompleteCache>();
-  auto non_global_code_complete_cache = std::make_unique<CodeCompleteCache>();
-  auto signature_cache = std::make_unique<CodeCompleteCache>();
-  ImportManager import_manager;
-  ImportPipelineStatus import_pipeline_status;
-  TimestampManager timestamp_manager;
-  QueryDatabase db;
+    IncludeComplete include_complete(&project);
+    auto global_code_complete_cache = std::make_unique<CodeCompleteCache>();
+    auto non_global_code_complete_cache = std::make_unique<CodeCompleteCache>();
+    auto signature_cache = std::make_unique<CodeCompleteCache>();
+    ImportManager import_manager;
+    ImportPipelineStatus import_pipeline_status;
+    TimestampManager timestamp_manager;
+    QueryDatabase db;
 
-  // Setup shared references.
-  for (MessageHandler* handler : *MessageHandler::message_handlers) {
-    handler->db = &db;
-    handler->project = &project;
-    handler->diag_engine = &diag_engine;
-    handler->file_consumer_shared = &file_consumer_shared;
-    handler->import_manager = &import_manager;
-    handler->import_pipeline_status = &import_pipeline_status;
-    handler->timestamp_manager = &timestamp_manager;
-    handler->semantic_cache = &semantic_cache;
-    handler->working_files = &working_files;
-    handler->clang_complete = &clang_complete;
-    handler->include_complete = &include_complete;
-    handler->global_code_complete_cache = global_code_complete_cache.get();
-    handler->non_global_code_complete_cache =
-        non_global_code_complete_cache.get();
-    handler->signature_cache = signature_cache.get();
-  }
-
-  // Run query db main loop.
-  SetCurrentThreadName("querydb");
-  while (true) {
-    WriteQueryDbStatus(true);
-    bool did_work = QueryDbMainLoop(
-        &db, &project, &file_consumer_shared, &import_manager,
-        &import_pipeline_status, &timestamp_manager, &semantic_cache,
-        &working_files, &clang_complete, &include_complete,
-        global_code_complete_cache.get(), non_global_code_complete_cache.get(),
-        signature_cache.get());
-
-    if (!did_work) {
-      // Cleanup and free any unused memory.
-      FreeUnusedMemory();
-
-      WriteQueryDbStatus(false);
-      auto* queue = QueueManager::instance();
-      QueueManager::instance()->querydb_waiter->Wait(
-          &queue->for_querydb, &queue->do_id_map,
-          &queue->on_indexed_for_querydb);
+    // Setup shared references.
+    for (MessageHandler* handler : *MessageHandler::message_handlers) {
+        handler->db = &db;
+        handler->project = &project;
+        handler->diag_engine = &diag_engine;
+        handler->file_consumer_shared = &file_consumer_shared;
+        handler->import_manager = &import_manager;
+        handler->import_pipeline_status = &import_pipeline_status;
+        handler->timestamp_manager = &timestamp_manager;
+        handler->semantic_cache = &semantic_cache;
+        handler->working_files = &working_files;
+        handler->clang_complete = &clang_complete;
+        handler->include_complete = &include_complete;
+        handler->global_code_complete_cache = global_code_complete_cache.get();
+        handler->non_global_code_complete_cache =
+            non_global_code_complete_cache.get();
+        handler->signature_cache = signature_cache.get();
     }
-  }
+
+    // Run query db main loop.
+    SetCurrentThreadName("querydb");
+    while (true) {
+        WriteQueryDbStatus(true);
+        bool did_work = QueryDbMainLoop(
+            &db, &project, &file_consumer_shared, &import_manager,
+            &import_pipeline_status, &timestamp_manager, &semantic_cache,
+            &working_files, &clang_complete, &include_complete,
+            global_code_complete_cache.get(),
+            non_global_code_complete_cache.get(), signature_cache.get());
+
+        if (!did_work) {
+            // Cleanup and free any unused memory.
+            FreeUnusedMemory();
+
+            WriteQueryDbStatus(false);
+            auto* queue = QueueManager::Instance();
+            QueueManager::Instance()->querydb_waiter->Wait(
+                &queue->for_querydb, &queue->do_id_map,
+                &queue->on_indexed_for_querydb);
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -303,213 +304,211 @@ void RunQueryDbThread(const std::string& bin_name) {
 //
 // |ipc| is connected to a server.
 void LaunchStdinLoop(std::unordered_map<MethodType, Timer>* request_times) {
-  // If flushing cin requires flushing cout there could be deadlocks in some
-  // clients.
-  std::cin.tie(nullptr);
+    // If flushing cin requires flushing cout there could be deadlocks in some
+    // clients.
+    std::cin.tie(nullptr);
 
-  WorkThread::StartThread("stdin", [request_times]() {
-    auto* queue = QueueManager::instance();
-    while (true) {
-      std::unique_ptr<InMessage> message;
-      optional<std::string> err =
-          MessageRegistry::instance()->ReadMessageFromStdin(&message);
+    WorkThread::StartThread("stdin", [request_times]() {
+        auto* queue = QueueManager::Instance();
+        while (true) {
+            std::unique_ptr<InMessage> message;
+            optional<std::string> err =
+                MessageRegistry::Instance()->ReadMessageFromStdin(&message);
 
-      // Message parsing can fail if we don't recognize the method.
-      if (err) {
-        // The message may be partially deserialized.
-        // Emit an error ResponseMessage if |id| is available.
-        if (message) {
-          lsRequestId id = message->GetRequestId();
-          if (id.has_value()) {
-            Out_Error out;
-            out.id = id;
-            out.error.code = lsErrorCodes::InvalidParams;
-            out.error.message = std::move(*err);
-            queue->WriteStdout(kMethodType_Unknown, out);
-          }
+            // Message parsing can fail if we don't recognize the method.
+            if (err) {
+                // The message may be partially deserialized.
+                // Emit an error ResponseMessage if |id| is available.
+                if (message) {
+                    lsRequestId id = message->GetRequestId();
+                    if (id.has_value()) {
+                        Out_Error out;
+                        out.id = id;
+                        out.error.code = lsErrorCodes::InvalidParams;
+                        out.error.message = std::move(*err);
+                        queue->WriteStdout(kMethodType_Unknown, out);
+                    }
+                }
+                continue;
+            }
+
+            // Cache |method_id| so we can access it after moving |message|.
+            MethodType method_type = message->GetMethodType();
+            (*request_times)[method_type] = Timer();
+
+            queue->for_querydb.Enqueue(std::move(message), false /*priority*/);
+
+            // If the message was to exit then querydb will take care of the
+            // actual exit. Stop reading from stdin since it might be detached.
+            if (method_type == kMethodType_Exit) break;
         }
-        continue;
-      }
-
-      // Cache |method_id| so we can access it after moving |message|.
-      MethodType method_type = message->GetMethodType();
-      (*request_times)[method_type] = Timer();
-
-      queue->for_querydb.Enqueue(std::move(message), false /*priority*/);
-
-      // If the message was to exit then querydb will take care of the actual
-      // exit. Stop reading from stdin since it might be detached.
-      if (method_type == kMethodType_Exit)
-        break;
-    }
-  });
+    });
 }
 
 void LaunchStdoutThread(std::unordered_map<MethodType, Timer>* request_times) {
-  WorkThread::StartThread("stdout", [=]() {
-    auto* queue = QueueManager::instance();
+    WorkThread::StartThread("stdout", [=]() {
+        auto* queue = QueueManager::Instance();
 
-    while (true) {
-      Stdout_Request message = queue->for_stdout.Dequeue();
+        while (true) {
+            Stdout_Request message = queue->for_stdout.Dequeue();
 
-      if (ShouldDisplayMethodTiming(message.method)) {
-        Timer time = (*request_times)[message.method];
-        time.ResetAndPrint("[e2e] Running " + std::string(message.method));
-      }
+            if (ShouldDisplayMethodTiming(message.method)) {
+                Timer time = (*request_times)[message.method];
+                time.ResetAndPrint("[e2e] Running " +
+                                   std::string(message.method));
+            }
 
-      RecordOutput(message.content);
+            RecordOutput(message.content);
 
-      fwrite(message.content.c_str(), message.content.size(), 1, stdout);
-      fflush(stdout);
-    }
-  });
+            fwrite(message.content.c_str(), message.content.size(), 1, stdout);
+            fflush(stdout);
+        }
+    });
 }
 
 void LanguageServerMain(const std::string& bin_name) {
-  std::unordered_map<MethodType, Timer> request_times;
+    std::unordered_map<MethodType, Timer> request_times;
 
-  LaunchStdinLoop(&request_times);
+    LaunchStdinLoop(&request_times);
 
-  // We run a dedicated thread for writing to stdout because there can be an
-  // unknown number of delays when output information.
-  LaunchStdoutThread(&request_times);
+    // We run a dedicated thread for writing to stdout because there can be an
+    // unknown number of delays when output information.
+    LaunchStdoutThread(&request_times);
 
-  // Start querydb which takes over this thread. The querydb will launch
-  // indexer threads as needed.
-  RunQueryDbThread(bin_name);
+    // Start querydb which takes over this thread. The querydb will launch
+    // indexer threads as needed.
+    RunQueryDbThread(bin_name);
 }
 
 int main(int argc, char** argv, const char** env) {
-  // `clang-format` will not output anything if PATH is not set.
-  if (!getenv("PATH")) {
-    LOG_S(WARNING) << "The \"PATH\" environment variable is not set. "
-                   << "Formatting will not work.";
-  }
+    // `clang-format` will not output anything if PATH is not set.
+    if (!getenv("PATH")) {
+        LOG_S(WARNING) << "The \"PATH\" environment variable is not set. "
+                       << "Formatting will not work.";
+    }
 
-  g_config = new Config();
+    g_config = new Config();
 
-  TraceMe();
+    TraceMe();
 
-  std::unordered_map<std::string, std::string> options =
-      ParseOptions(argc, argv);
+    std::unordered_map<std::string, std::string> options =
+        ParseOptions(argc, argv);
 
-  // Setup logging ASAP.
-  if (HasOption(options, "--log-file")) {
-    loguru::add_file(options["--log-file"].c_str(), loguru::Truncate,
-                     loguru::Verbosity_MAX);
-  }
-  if (HasOption(options, "--log-file-append")) {
-    loguru::add_file(options["--log-file-append"].c_str(), loguru::Append,
-                     loguru::Verbosity_MAX);
-  }
+    // Setup logging ASAP.
+    if (HasOption(options, "--log-file")) {
+        loguru::add_file(options["--log-file"].c_str(), loguru::Truncate,
+                         loguru::Verbosity_MAX);
+    }
+    if (HasOption(options, "--log-file-append")) {
+        loguru::add_file(options["--log-file-append"].c_str(), loguru::Append,
+                         loguru::Verbosity_MAX);
+    }
 
-  if (HasOption(options, "-h") || HasOption(options, "--help")) {
-    PrintHelp();
-    // Also emit doctest help if --test-unit is passed.
-    if (!HasOption(options, "--test-unit"))
-      return 0;
-  }
+    if (HasOption(options, "-h") || HasOption(options, "--help")) {
+        PrintHelp();
+        // Also emit doctest help if --test-unit is passed.
+        if (!HasOption(options, "--test-unit")) return 0;
+    }
 
-  if (!HasOption(options, "--log-all-to-stderr"))
-    loguru::g_stderr_verbosity = loguru::Verbosity_WARNING;
+    if (!HasOption(options, "--log-all-to-stderr"))
+        loguru::g_stderr_verbosity = loguru::Verbosity_WARNING;
 
-  loguru::g_preamble_date = false;
-  loguru::g_preamble_time = false;
-  loguru::g_preamble_verbose = false;
-  loguru::g_flush_interval_ms = 0;
-  loguru::init(argc, argv);
+    loguru::g_preamble_date = false;
+    loguru::g_preamble_time = false;
+    loguru::g_preamble_verbose = false;
+    loguru::g_flush_interval_ms = 0;
+    loguru::init(argc, argv);
 
-  QueueManager::Init();
+    QueueManager::Init();
 
-  bool language_server = true;
+    bool language_server = true;
 
-  PlatformInit();
-  IndexInit();
+    PlatformInit();
+    IndexInit();
 
-  if (HasOption(options, "--print-env"))
-    PrintEnvironment(env);
+    if (HasOption(options, "--print-env")) PrintEnvironment(env);
 
-  if (HasOption(options, "--record"))
-    EnableRecording(options["--record"]);
+    if (HasOption(options, "--record")) EnableRecording(options["--record"]);
 
-  if (HasOption(options, "--check")) {
-    loguru::g_stderr_verbosity = loguru::Verbosity_MAX;
+    if (HasOption(options, "--check")) {
+        loguru::g_stderr_verbosity = loguru::Verbosity_MAX;
 
-    LOG_S(INFO) << "Running --check";
+        LOG_S(INFO) << "Running --check";
 
-    optional<AbsolutePath> path = NormalizePath(options["--check"]);
-    if (!path) {
-      ABORT_S() << "Cannot find path \"" << options["--check"] << "\". Make "
+        optional<AbsolutePath> path = NormalizePath(options["--check"]);
+        if (!path) {
+            ABORT_S()
+                << "Cannot find path \"" << options["--check"] << "\". Make "
                 << "sure to pass a specific cc/cpp file, not a directory.";
-    }
-    optional<std::string> content = ReadContent(*path);
-    if (!content || content->empty()) {
-      ABORT_S() << "Cannot read file content at \"" << *path
-                << "\". Make sure to pass a specific cc/cpp file, not a "
-                << "directory.";
-    }
-    LOG_S(INFO) << "Using path " << *path;
+        }
+        optional<std::string> content = ReadContent(*path);
+        if (!content || content->empty()) {
+            ABORT_S() << "Cannot read file content at \"" << *path
+                      << "\". Make sure to pass a specific cc/cpp file, not a "
+                      << "directory.";
+        }
+        LOG_S(INFO) << "Using path " << *path;
 
-    language_server = false;
-    Project project;
-    Config config;
-    if (!GetDefaultResourceDirectory())
-      ABORT_S() << "Cannot resolve resource directory";
-    config.resourceDirectory = GetDefaultResourceDirectory()->path;
-    project.Load(GetWorkingDirectory().path);
-    Project::Entry entry = project.FindCompilationEntryForFile(path->path);
-    LOG_S(INFO) << "Using arguments " << StringJoin(entry.args, " ");
-    ClangSanityCheck(entry);
-    return 0;
-  }
-
-  if (HasOption(options, "--test-unit")) {
-    language_server = false;
-    doctest::Context context;
-    context.applyCommandLine(argc, argv);
-    int res = context.run();
-    if (res != 0 || context.shouldExit())
-      return res;
-  }
-
-  if (HasOption(options, "--test-index")) {
-    language_server = false;
-    if (!RunIndexTests(options["--test-index"], !HasOption(options, "--ci")))
-      return 1;
-  }
-
-  if (language_server) {
-    if (HasOption(options, "--init")) {
-      // We check syntax error here but override client-side
-      // initializationOptions in messages/initialize.cc
-      g_init_options = options["--init"];
-      rapidjson::Document reader;
-      rapidjson::ParseResult ok = reader.Parse(g_init_options.c_str());
-      if (!ok) {
-        std::cerr << "Failed to parse --init as JSON: "
-                  << rapidjson::GetParseError_En(ok.Code()) << " ("
-                  << ok.Offset() << ")\n";
-        return 1;
-      }
-      JsonReader json_reader{&reader};
-      try {
+        language_server = false;
+        Project project;
         Config config;
-        Reflect(json_reader, config);
-      } catch (std::invalid_argument& e) {
-        std::cerr << "Fail to parse --init "
-                  << static_cast<JsonReader&>(json_reader).GetPath()
-                  << ", expected " << e.what() << "\n";
-        return 1;
-      }
+        if (!GetDefaultResourceDirectory())
+            ABORT_S() << "Cannot resolve resource directory";
+        config.resourceDirectory = GetDefaultResourceDirectory()->path;
+        project.Load(GetWorkingDirectory().path);
+        Project::Entry entry = project.FindCompilationEntryForFile(path->path);
+        LOG_S(INFO) << "Using arguments " << StringJoin(entry.args, " ");
+        ClangSanityCheck(entry);
+        return 0;
     }
 
-    LanguageServerMain(argv[0]);
-  }
+    if (HasOption(options, "--test-unit")) {
+        language_server = false;
+        doctest::Context context;
+        context.applyCommandLine(argc, argv);
+        int res = context.run();
+        if (res != 0 || context.shouldExit()) return res;
+    }
 
-  if (HasOption(options, "--wait-for-input")) {
-    std::cerr << std::endl << "[Enter] to exit" << std::endl;
-    getchar();
-  }
+    if (HasOption(options, "--test-index")) {
+        language_server = false;
+        if (!RunIndexTests(options["--test-index"],
+                           !HasOption(options, "--ci")))
+            return 1;
+    }
 
-  return 0;
+    if (language_server) {
+        if (HasOption(options, "--init")) {
+            // We check syntax error here but override client-side
+            // initializationOptions in messages/initialize.cc
+            g_init_options = options["--init"];
+            rapidjson::Document reader;
+            rapidjson::ParseResult ok = reader.Parse(g_init_options.c_str());
+            if (!ok) {
+                std::cerr << "Failed to parse --init as JSON: "
+                          << rapidjson::GetParseError_En(ok.Code()) << " ("
+                          << ok.Offset() << ")\n";
+                return 1;
+            }
+            JsonReader json_reader{&reader};
+            try {
+                Config config;
+                Reflect(json_reader, config);
+            } catch (std::invalid_argument& e) {
+                std::cerr << "Fail to parse --init "
+                          << static_cast<JsonReader&>(json_reader).GetPath()
+                          << ", expected " << e.what() << "\n";
+                return 1;
+            }
+        }
+
+        LanguageServerMain(argv[0]);
+    }
+
+    if (HasOption(options, "--wait-for-input")) {
+        std::cerr << std::endl << "[Enter] to exit" << std::endl;
+        getchar();
+    }
+
+    return 0;
 }

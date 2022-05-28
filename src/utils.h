@@ -1,7 +1,5 @@
 #pragma once
 
-#include "file_types.h"
-
 #include <optional.h>
 #include <string_view.h>
 
@@ -11,6 +9,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "file_types.h"
 
 // Trim from start (in place)
 void TrimStartInPlace(std::string& s);
@@ -41,48 +41,43 @@ std::string GetBaseName(const std::string& path);
 // Returns |path| without the filetype, ie, "foo/bar.cc" => "foo/bar".
 std::string StripFileType(const std::string& path);
 
-std::string ReplaceAll(const std::string& source,
-                       const std::string& from,
+std::string ReplaceAll(const std::string& source, const std::string& from,
                        const std::string& to);
 
 std::vector<std::string> SplitString(const std::string& str,
                                      const std::string& delimiter);
 
 template <typename TValues, typename TMap>
-std::string StringJoinMap(const TValues& values,
-                          const TMap& map,
+std::string StringJoinMap(const TValues& values, const TMap& map,
                           const std::string& sep = ", ") {
-  std::string result;
-  bool first = true;
-  for (auto& entry : values) {
-    if (!first)
-      result += sep;
-    first = false;
-    result += map(entry);
-  }
-  return result;
+    std::string result;
+    bool first = true;
+    for (auto& entry : values) {
+        if (!first) result += sep;
+        first = false;
+        result += map(entry);
+    }
+    return result;
 }
 
 template <typename TValues>
 std::string StringJoin(const TValues& values, const std::string& sep = ", ") {
-  return StringJoinMap(values, [](const std::string& entry) { return entry; },
-                       sep);
+    return StringJoinMap(
+        values, [](const std::string& entry) { return entry; }, sep);
 }
 
 template <typename TCollection, typename TValue>
 bool ContainsValue(const TCollection& collection, const TValue& value) {
-  return std::find(std::begin(collection), std::end(collection), value) !=
-         std::end(collection);
+    return std::find(std::begin(collection), std::end(collection), value) !=
+           std::end(collection);
 }
 
 // Finds all files in the given folder. This is recursive.
-std::vector<std::string> GetFilesAndDirectoriesInFolder(std::string folder,
-                                          bool recursive,
-                                          bool add_folder_to_path);
-void GetFilesAndDirectoriesInFolder(std::string folder,
-                      bool recursive,
-                      bool add_folder_to_path,
-                      const std::function<void(const std::string&)>& handler);
+std::vector<std::string> GetFilesAndDirectoriesInFolder(
+    std::string folder, bool recursive, bool add_folder_to_path);
+void GetFilesAndDirectoriesInFolder(
+    std::string folder, bool recursive, bool add_folder_to_path,
+    const std::function<void(const std::string&)>& handler);
 
 // Ensures that |path| ends in a slash.
 void EnsureEndsInSlash(std::string& path);
@@ -99,32 +94,32 @@ std::vector<std::string> ToLines(const std::string& content,
                                  bool trim_whitespace);
 
 struct TextReplacer {
-  struct Replacement {
-    std::string from;
-    std::string to;
-  };
+    struct Replacement {
+        std::string from;
+        std::string to;
+    };
 
-  std::vector<Replacement> replacements;
+    std::vector<Replacement> replacements;
 
-  std::string Apply(const std::string& content);
+    std::string Apply(const std::string& content);
 };
 
 void WriteToFile(const std::string& filename, const std::string& content);
 
 template <typename T>
 void AddRange(std::vector<T>* dest, const std::vector<T>& to_add) {
-  dest->insert(dest->end(), to_add.begin(), to_add.end());
+    dest->insert(dest->end(), to_add.begin(), to_add.end());
 }
 
 template <typename T>
 void AddRange(std::vector<T>* dest, std::vector<T>&& to_add) {
-  dest->insert(dest->end(), std::make_move_iterator(to_add.begin()),
-               std::make_move_iterator(to_add.end()));
+    dest->insert(dest->end(), std::make_move_iterator(to_add.begin()),
+                 std::make_move_iterator(to_add.end()));
 }
 
 template <typename T, typename Fn>
 void RemoveIf(std::vector<T>* vec, Fn predicate) {
-  vec->erase(std::remove_if(vec->begin(), vec->end(), predicate), vec->end());
+    vec->erase(std::remove_if(vec->begin(), vec->end(), predicate), vec->end());
 }
 
 float GetProcessMemoryUsedInMb();

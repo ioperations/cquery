@@ -1,13 +1,13 @@
 #pragma once
 
-#include "lsp.h"
-#include "method.h"
-#include "query.h"
-
 #include <optional.h>
 
 #include <memory>
 #include <vector>
+
+#include "lsp.h"
+#include "method.h"
+#include "query.h"
 
 struct ClangCompleteManager;
 struct CodeCompleteCache;
@@ -26,35 +26,27 @@ struct WorkingFile;
 struct WorkingFiles;
 
 struct Out_CqueryPublishSemanticHighlighting
-    : public lsOutMessage<Out_CqueryPublishSemanticHighlighting> {
-  struct Symbol {
-    int stableId = 0;
-    lsSymbolKind parentKind;
-    lsSymbolKind kind;
-    StorageClass storage;
-    Role role;
-    std::vector<lsRange> ranges;
-  };
-  struct Params {
-    lsDocumentUri uri;
-    std::vector<Symbol> symbols;
-  };
-  std::string method = "$cquery/publishSemanticHighlighting";
-  Params params;
+    : public LsOutMessage<Out_CqueryPublishSemanticHighlighting> {
+    struct Symbol {
+        int stableId = 0;
+        ls_symbol_kind parentKind;
+        ls_symbol_kind kind;
+        storage_class storage;
+        role role;
+        std::vector<LsRange> ranges;
+    };
+    struct Params {
+        LsDocumentUri uri;
+        std::vector<Symbol> symbols;
+    };
+    std::string method = "$cquery/publishSemanticHighlighting";
+    Params params;
 };
-MAKE_REFLECT_STRUCT(Out_CqueryPublishSemanticHighlighting::Symbol,
-                    stableId,
-                    parentKind,
-                    kind,
-                    storage,
-                    role,
-                    ranges);
-MAKE_REFLECT_STRUCT(Out_CqueryPublishSemanticHighlighting::Params,
-                    uri,
+MAKE_REFLECT_STRUCT(Out_CqueryPublishSemanticHighlighting::Symbol, stableId,
+                    parentKind, kind, storage, role, ranges);
+MAKE_REFLECT_STRUCT(Out_CqueryPublishSemanticHighlighting::Params, uri,
                     symbols);
-MAKE_REFLECT_STRUCT(Out_CqueryPublishSemanticHighlighting,
-                    jsonrpc,
-                    method,
+MAKE_REFLECT_STRUCT(Out_CqueryPublishSemanticHighlighting, jsonrpc, method,
                     params);
 
 // Usage:
@@ -68,47 +60,45 @@ MAKE_REFLECT_STRUCT(Out_CqueryPublishSemanticHighlighting,
 // |MessageHandler::message_handlers|.
 
 #define REGISTER_MESSAGE_HANDLER(type) \
-  static type type##message_handler_instance_;
+    static type type##message_handler_instance_;
 
 struct MessageHandler {
-  QueryDatabase* db = nullptr;
-  Project* project = nullptr;
-  DiagnosticsEngine* diag_engine = nullptr;
-  FileConsumerSharedState* file_consumer_shared = nullptr;
-  ImportManager* import_manager = nullptr;
-  ImportPipelineStatus* import_pipeline_status = nullptr;
-  TimestampManager* timestamp_manager = nullptr;
-  SemanticHighlightSymbolCache* semantic_cache = nullptr;
-  WorkingFiles* working_files = nullptr;
-  ClangCompleteManager* clang_complete = nullptr;
-  IncludeComplete* include_complete = nullptr;
-  CodeCompleteCache* global_code_complete_cache = nullptr;
-  CodeCompleteCache* non_global_code_complete_cache = nullptr;
-  CodeCompleteCache* signature_cache = nullptr;
+    QueryDatabase* db = nullptr;
+    Project* project = nullptr;
+    DiagnosticsEngine* diag_engine = nullptr;
+    FileConsumerSharedState* file_consumer_shared = nullptr;
+    ImportManager* import_manager = nullptr;
+    ImportPipelineStatus* import_pipeline_status = nullptr;
+    TimestampManager* timestamp_manager = nullptr;
+    SemanticHighlightSymbolCache* semantic_cache = nullptr;
+    WorkingFiles* working_files = nullptr;
+    ClangCompleteManager* clang_complete = nullptr;
+    IncludeComplete* include_complete = nullptr;
+    CodeCompleteCache* global_code_complete_cache = nullptr;
+    CodeCompleteCache* non_global_code_complete_cache = nullptr;
+    CodeCompleteCache* signature_cache = nullptr;
 
-  virtual MethodType GetMethodType() const = 0;
-  virtual void Run(std::unique_ptr<InMessage> message) = 0;
+    virtual MethodType GetMethodType() const = 0;
+    virtual void Run(std::unique_ptr<InMessage> message) = 0;
 
-  static std::vector<MessageHandler*>* message_handlers;
+    static std::vector<MessageHandler*>* message_handlers;
 
- protected:
-  MessageHandler();
+   protected:
+    MessageHandler();
 };
 
 template <typename TMessage>
 struct BaseMessageHandler : MessageHandler {
-  virtual void Run(TMessage* message) = 0;
+    virtual void Run(TMessage* message) = 0;
 
-  // MessageHandler:
-  void Run(std::unique_ptr<InMessage> message) override {
-    Run(static_cast<TMessage*>(message.get()));
-  }
+    // MessageHandler:
+    void Run(std::unique_ptr<InMessage> message) override {
+        Run(static_cast<TMessage*>(message.get()));
+    }
 };
 
-bool FindFileOrFail(QueryDatabase* db,
-                    const Project* project,
-                    optional<lsRequestId> id,
-                    const AbsolutePath& absolute_path,
+bool FindFileOrFail(QueryDatabase* db, const Project* project,
+                    optional<lsRequestId> id, const AbsolutePath& absolute_path,
                     QueryFile** out_query_file,
                     QueryId::File* out_file_id = nullptr);
 
@@ -117,7 +107,6 @@ void EmitInactiveLines(WorkingFile* working_file,
 
 void EmitSemanticHighlighting(QueryDatabase* db,
                               SemanticHighlightSymbolCache* semantic_cache,
-                              WorkingFile* working_file,
-                              QueryFile* file);
+                              WorkingFile* working_file, QueryFile* file);
 
 bool ShouldIgnoreFileForIndexing(const std::string& path);

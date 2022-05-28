@@ -4,39 +4,39 @@
 #include "queue_manager.h"
 
 namespace {
-MethodType kMethodType = "workspace/executeCommand";
+MethodType k_method_type = "workspace/executeCommand";
 
-struct In_WorkspaceExecuteCommand : public RequestInMessage {
-  MethodType GetMethodType() const override { return kMethodType; }
-  lsCommand<lsCodeLensCommandArguments> params;
+struct InWorkspaceExecuteCommand : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
+    LsCommand<LsCodeLensCommandArguments> params;
 };
-MAKE_REFLECT_STRUCT(In_WorkspaceExecuteCommand, id, params);
-REGISTER_IN_MESSAGE(In_WorkspaceExecuteCommand);
+MAKE_REFLECT_STRUCT(InWorkspaceExecuteCommand, id, params);
+REGISTER_IN_MESSAGE(InWorkspaceExecuteCommand);
 
-struct Out_WorkspaceExecuteCommand
-    : public lsOutMessage<Out_WorkspaceExecuteCommand> {
-  lsRequestId id;
-  std::vector<lsLocation> result;
+struct OutWorkspaceExecuteCommand
+    : public LsOutMessage<OutWorkspaceExecuteCommand> {
+    lsRequestId id;
+    std::vector<LsLocation> result;
 };
-MAKE_REFLECT_STRUCT(Out_WorkspaceExecuteCommand, jsonrpc, id, result);
+MAKE_REFLECT_STRUCT(OutWorkspaceExecuteCommand, jsonrpc, id, result);
 
-struct Handler_WorkspaceExecuteCommand
-    : BaseMessageHandler<In_WorkspaceExecuteCommand> {
-  MethodType GetMethodType() const override { return kMethodType; }
-  void Run(In_WorkspaceExecuteCommand* request) override {
-    const auto& params = request->params;
-    Out_WorkspaceExecuteCommand out;
-    out.id = request->id;
-    if (params.command == "cquery._applyFixIt") {
-    } else if (params.command == "cquery._autoImplement") {
-    } else if (params.command == "cquery._insertInclude") {
-    } else if (params.command == "cquery.showReferences") {
-      out.result = params.arguments.locations;
+struct HandlerWorkspaceExecuteCommand
+    : BaseMessageHandler<InWorkspaceExecuteCommand> {
+    MethodType GetMethodType() const override { return k_method_type; }
+    void Run(InWorkspaceExecuteCommand* request) override {
+        const auto& params = request->params;
+        OutWorkspaceExecuteCommand out;
+        out.id = request->id;
+        if (params.command == "cquery._applyFixIt") {
+        } else if (params.command == "cquery._autoImplement") {
+        } else if (params.command == "cquery._insertInclude") {
+        } else if (params.command == "cquery.showReferences") {
+            out.result = params.arguments.locations;
+        }
+
+        QueueManager::WriteStdout(k_method_type, out);
     }
-
-    QueueManager::WriteStdout(kMethodType, out);
-  }
 };
-REGISTER_MESSAGE_HANDLER(Handler_WorkspaceExecuteCommand);
+REGISTER_MESSAGE_HANDLER(HandlerWorkspaceExecuteCommand);
 
 }  // namespace

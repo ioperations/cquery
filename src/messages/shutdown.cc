@@ -2,27 +2,27 @@
 #include "queue_manager.h"
 
 namespace {
-MethodType kMethodType = "shutdown";
+MethodType k_method_type = "shutdown";
 
-struct In_Shutdown : public RequestInMessage {
-  MethodType GetMethodType() const override { return kMethodType; }
+struct InShutdown : public RequestInMessage {
+    MethodType GetMethodType() const override { return k_method_type; }
 };
-MAKE_REFLECT_STRUCT(In_Shutdown, id);
-REGISTER_IN_MESSAGE(In_Shutdown);
+MAKE_REFLECT_STRUCT(InShutdown, id);
+REGISTER_IN_MESSAGE(InShutdown);
 
-struct Out_Shutdown : public lsOutMessage<Out_Shutdown> {
-  lsRequestId id;
-  JsonNull result;
+struct OutShutdown : public LsOutMessage<OutShutdown> {
+    lsRequestId id;
+    JsonNull result;
 };
-MAKE_REFLECT_STRUCT(Out_Shutdown, jsonrpc, id, result);
+MAKE_REFLECT_STRUCT(OutShutdown, jsonrpc, id, result);
 
-struct Handler_Shutdown : BaseMessageHandler<In_Shutdown> {
-  MethodType GetMethodType() const override { return kMethodType; }
-  void Run(In_Shutdown* request) override {
-    Out_Shutdown out;
-    out.id = request->id;
-    QueueManager::WriteStdout(kMethodType, out);
-  }
+struct HandlerShutdown : BaseMessageHandler<InShutdown> {
+    MethodType GetMethodType() const override { return k_method_type; }
+    void Run(InShutdown* request) override {
+        OutShutdown out;
+        out.id = request->id;
+        QueueManager::WriteStdout(k_method_type, out);
+    }
 };
-REGISTER_MESSAGE_HANDLER(Handler_Shutdown);
+REGISTER_MESSAGE_HANDLER(HandlerShutdown);
 }  // namespace
