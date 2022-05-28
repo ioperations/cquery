@@ -8,7 +8,7 @@ include(DefaultCMakeBuildType)
 set(CLANG_DOWNLOAD_LOCATION ${CMAKE_BINARY_DIR}
     CACHE STRING "Downloaded Clang location")
 option(SYSTEM_CLANG "Use system installation of Clang instead of \
-       downloading Clang" OFF)
+downloading Clang" ON)
 option(ASAN "Compile with address sanitizers" OFF)
 option(ASSERTS "Compile with asserts enabled" OFF)
 option(CI "Add -Werror or equivalent" OFF)

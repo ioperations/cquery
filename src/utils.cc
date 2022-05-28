@@ -7,6 +7,7 @@
 #include <tinydir.h>
 #include <loguru/loguru.hpp>
 
+#include <sys/stat.h>
 #include <algorithm>
 #include <cassert>
 #include <cctype>
@@ -17,7 +18,6 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
-#include <sys/stat.h>
 
 #if !defined(__APPLE__)
 #include <sparsepp/spp_memory.h>
@@ -226,9 +226,10 @@ static void GetFilesInFolderHelper(
   }
 }
 
-std::vector<std::string> GetFilesAndDirectoriesInFolder(std::string folder,
-                                          bool recursive,
-                                          bool add_folder_to_path) {
+std::vector<std::string> GetFilesAndDirectoriesInFolder(
+    std::string folder,
+    bool recursive,
+    bool add_folder_to_path) {
   EnsureEndsInSlash(folder);
   std::vector<std::string> result;
   GetFilesInFolderHelper(
@@ -237,10 +238,11 @@ std::vector<std::string> GetFilesAndDirectoriesInFolder(std::string folder,
   return result;
 }
 
-void GetFilesAndDirectoriesInFolder(std::string folder,
-                      bool recursive,
-                      bool add_folder_to_path,
-                      const std::function<void(const std::string&)>& handler) {
+void GetFilesAndDirectoriesInFolder(
+    std::string folder,
+    bool recursive,
+    bool add_folder_to_path,
+    const std::function<void(const std::string&)>& handler) {
   EnsureEndsInSlash(folder);
   GetFilesInFolderHelper(folder, recursive, add_folder_to_path ? folder : "",
                          handler);

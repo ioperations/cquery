@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iosfwd>
+#include <mutex>
 #include <shared_mutex>
 #include <string>
 #include <unordered_map>

@@ -1,8 +1,8 @@
 #include "import_manager.h"
 
-#include "assert.h"
-
+#include <mutex>
 #include <ostream>
+#include "assert.h"
 
 std::ostream& operator<<(std::ostream& os, const PipelineStatus& status) {
   switch (status) {

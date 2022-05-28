@@ -118,8 +118,8 @@ struct ActiveThread {
       if (!all_zero &&
           Timer::GetCurrentTimeInMilliseconds() < status_->next_progress_output)
         return;
-      status_->next_progress_output =
-          Timer::GetCurrentTimeInMilliseconds() + g_config->progressReportFrequencyMs;
+      status_->next_progress_output = Timer::GetCurrentTimeInMilliseconds() +
+                                      g_config->progressReportFrequencyMs;
     }
 
     QueueManager::WriteStdout(kMethodType_Unknown, out);
@@ -214,8 +214,9 @@ CacheLoadResult TryLoadFromCache(
     assert(!dependency.path.empty());
 
     if (ComputeChangeStatus(timestamp_manager, modification_timestamp_fetcher,
-                       cache_manager, previous_index, dependency, entry.args,
-                       previous_index->path) == ChangeResult::kYes) {
+                            cache_manager, previous_index, dependency,
+                            entry.args,
+                            previous_index->path) == ChangeResult::kYes) {
       needs_reparse = true;
 
       // Do not break here, as we need to update |file_consumer_shared| for

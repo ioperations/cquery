@@ -25,3 +25,6 @@ waf2*
 waf3*
 x64
 .ycm_extra_conf.py
+.ccls-cache
+.cache
+compile_commands.json

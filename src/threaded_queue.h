@@ -133,7 +133,7 @@ struct ThreadedQueue : public BaseThreadQueue {
       auto val = std::move(q->front());
       q->pop_front();
       --total_count_;
-      return std::move(val);
+      return val;
     };
     if (!priority_.empty())
       return execute(&priority_);
@@ -149,7 +149,7 @@ struct ThreadedQueue : public BaseThreadQueue {
       auto val = std::move(q->front());
       q->pop_front();
       --total_count_;
-      return std::move(val);
+      return val;
     };
 
     auto get_result = [&](std::deque<T>* first,
