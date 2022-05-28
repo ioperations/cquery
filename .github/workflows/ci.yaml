@@ -1,0 +1,40 @@
+name: build and test
+
+on: push
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on: [ubuntu-20.04]
+        libclang-version: ["6.0", "7", "8", "9", "10", "11", "12"]
+        cxx-std: ["c++2a"]
+        optim-level: ["-O3"]
+    runs-on: ${{ matrix.runs-on }}
+    env:
+      CXX: clang++-${{ matrix.libclang-version }}
+      CXXFLAGS: -std=${{ matrix.cxx-std }} ${{ matrix.optim-level }} -Wall -Wextra
+      DEBIAN_FRONTEND: "noninteractive"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install compiler
+        if: startsWith(matrix.runs-on, 'ubuntu')
+        run: |
+          printenv
+          sudo apt update -qq 2&> 1 || true
+          DEBIAN_FRONTEND="noninteractive" sudo apt install -y lsb-release software-properties-common curl libclang-11-dev git
+
+          DEBIAN_FRONTEND="noninteractive" sudo apt update 
+          DEBIAN_FRONTEND="noninteractive" sudo apt install -y rapidjson-dev build-essential -y clang-${{ matrix.libclang-version }} libclang-${{ matrix.libclang-version  }}-dev
+
+      - name: check submodule
+        run: |
+          git submodule update --init --recursive
+
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_CXX_COMPILER=${CXX} ..
+          make -j`nproc`
